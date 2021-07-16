@@ -23,7 +23,7 @@ var (
 
 	// Root folder of this project
 	Root            = filepath.Join(filepath.Dir(b), "../")
-	walletsPath     = path.Join(Root, "/wallet/db")
+	walletsPath     = path.Join(Root, "/storage/wallets")
 	walletsFilename = "wallets.data"
 )
 
@@ -76,16 +76,9 @@ func (ws *Wallets) LoadFile() error {
 
 	return nil
 }
-func (ws *Wallets) SaveFile() {
+func (ws *Wallets) Save() {
 	walletsFile := path.Join(walletsPath, walletsFilename)
 
-	// if cwd {
-	// 	dir, err := os.Getwd()
-	// 	if err != nil {
-	// 		log.Fatal(err)
-	// 	}
-	// 	walletsFile = path.Join(dir, walletsFilename)
-	// }
 	var content bytes.Buffer
 
 	gob.Register(elliptic.P256())

@@ -10,73 +10,22 @@ import (
 )
 
 // Block represent the Block entity of the blockchain
-type (
-	Block struct {
-		Timestamp    int64          `json:"timestamp"`
-		Version      int64          `json:"version"`
-		Hash         []byte         `json:"hash"`
-		PrevHash     []byte         `json:"prev_hash"`
-		Transactions []*Transaction `json:"transactions"`
-		Height       int            `json:"height"`
-		MerkleRoot   []byte         `json:"merkle_root"`
-		TxCount      int            `json:"tx_count"`
-	}
+type Block struct {
+	Timestamp    int64          `json:"timestamp"`
+	Version      int            `json:"version"`
+	Hash         []byte         `json:"hash"`
+	PrevHash     []byte         `json:"prev_hash"`
+	Transactions []*Transaction `json:"transactions"`
+	Height       int            `json:"height"`
+	MerkleRoot   []byte         `json:"merkle_root"`
+	TxCount      int            `json:"tx_count"`
+}
 
-	BlockService interface {
-		// Hash returns block hash.
-		GetHash() []byte
-
-		GetVersion() int64
-		// PrevHash returns previous block hash.
-		GetPrevHash() []byte
-		// MerkleRoot returns a merkle root of the transaction hashes.
-		GetMerkleRoot() []byte
-		// Timestamp returns block's proposal timestamp.
-		GetTimestamp() int64
-		// Index returns block index.
-		GetHeight() int
-
-		// Transactions returns block's transaction list.
-		GetTransactions() []*Transaction
-	}
+var (
+	Version = 1
 )
 
-// Version implements Block interface.
-func (b *Block) GetVersion() int64 {
-	return b.Version
-}
-
-// PrevHash implements Block interface.
-func (b *Block) GetPrevHash() []byte {
-	return b.PrevHash
-}
-
-// Timestamp implements Block interface.
-func (b *Block) GetTimestamp() int64 {
-	return b.Timestamp
-}
-
-// Index implements Block interface.
-func (b *Block) GetHeight() int {
-	return b.Height
-}
-
-// MerkleRoot implements Block interface.
-func (b *Block) GetMerkleRoot() []byte {
-	return b.MerkleRoot
-}
-
-// Transactions implements Block interface.
-func (b *Block) GetTransactions() []*Transaction {
-	return b.Transactions
-}
-
-// Transactions implements Block interface.
-func (b Block) GetHash() []byte {
-	return b.Hash
-}
-
-func NewBlock(txs []*Transaction, version int64, prevHash []byte, height int) BlockService {
+func NewBlock(txs []*Transaction, version int, prevHash []byte, height int) *Block {
 	block := &Block{
 		time.Now().Unix(),
 		version,
@@ -156,4 +105,19 @@ func (b *Block) IsBlockValid(oldBlock Block) bool {
 	}
 
 	return true
+}
+
+// func (b *Block) String() string {
+// 	var lines []string
+// 	lines = append(lines, fmt.Sprintf("BLOCK: \n Hash: %x", b.Hash))
+// 	lines = append(lines, fmt.Sprintf("Merkle Root: %x", b.MerkleRoot))
+// 	lines = append(lines, fmt.Sprintf("Height: %d", b.Height))
+// 	lines = append(lines, fmt.Sprintf("TxCount: %d", len(b.Transactions)))
+// 	return strings.Join(lines, "\n")
+// }
+
+// Genesis block
+func Genesis(firstTx *Transaction, version int) *Block {
+	newBlock := NewBlock([]*Transaction{firstTx}, version, []byte{}, 1)
+	return newBlock
 }

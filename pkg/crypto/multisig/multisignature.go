@@ -22,7 +22,7 @@ func NewMultisig(n int) *MultiSig {
 
 // AddSignature adds a signature to the multisig
 func (sig *MultiSig) AddSignature(dataToSign []byte, PubKey []byte, privKey ecdsa.PrivateKey) {
-	r, s, err := ecdsa.Sign(rand.Reader, &privKey, []byte(dataToSign))
+	r, s, err := ecdsa.Sign(rand.Reader, &privKey, dataToSign)
 	if err != nil {
 		panic(err)
 	}
@@ -33,6 +33,7 @@ func (sig *MultiSig) AddSignature(dataToSign []byte, PubKey []byte, privKey ecds
 
 // Verify all signatures of the multisig
 func (sig *MultiSig) Verify(data []byte) (bool, error) {
+
 	for i := 0; i < len(sig.PubKeys); i++ {
 		r := big.Int{}
 		s := big.Int{}
@@ -48,10 +49,9 @@ func (sig *MultiSig) Verify(data []byte) (bool, error) {
 		y.SetBytes(pubKey[(keyLen / 2):])
 
 		rawPubKey := ecdsa.PublicKey{Curve: elliptic.P256(), X: &x, Y: &y}
-		if ecdsa.Verify(&rawPubKey, []byte(data), &r, &s) == false {
-			return false, nil
-		}
+
+		return ecdsa.Verify(&rawPubKey, data, &r, &s), nil
 	}
 
-	return true, nil
+	return false, nil
 }

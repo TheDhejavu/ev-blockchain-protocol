@@ -9,21 +9,21 @@ import (
 // =============================
 // memory pool for transactions
 // =============================
-type memPool struct {
+type Pool struct {
 	mtx   *sync.RWMutex
 	store map[string]blockchain.Transaction
 }
 
 var txPerBlock = 10
 
-func NewMemoryPool() *memPool {
-	return &memPool{
+func NewMemoryPool(n int) *Pool {
+	return &Pool{
 		mtx:   new(sync.RWMutex),
-		store: make(map[string]blockchain.Transaction),
+		store: make(map[string]blockchain.Transaction, n),
 	}
 }
 
-func (p *memPool) Add(tx blockchain.Transaction) {
+func (p *Pool) Add(tx blockchain.Transaction) {
 	p.mtx.Lock()
 
 	h := string(tx.Hash()[:])
@@ -34,7 +34,7 @@ func (p *memPool) Add(tx blockchain.Transaction) {
 	p.mtx.Unlock()
 }
 
-func (p *memPool) Get(h string) (tx blockchain.Transaction) {
+func (p *Pool) Get(h string) (tx blockchain.Transaction) {
 	p.mtx.RLock()
 	tx = p.store[h]
 	p.mtx.RUnlock()
@@ -42,13 +42,13 @@ func (p *memPool) Get(h string) (tx blockchain.Transaction) {
 	return
 }
 
-func (p *memPool) Delete(h string) {
+func (p *Pool) Delete(h string) {
 	p.mtx.Lock()
 	delete(p.store, h)
 	p.mtx.Unlock()
 }
 
-func (p *memPool) GetVerified() (txs []blockchain.Transaction) {
+func (p *Pool) GetVerified() (txs []blockchain.Transaction) {
 	n := txPerBlock
 	if n == 0 {
 		return
