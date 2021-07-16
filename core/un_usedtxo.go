@@ -13,6 +13,9 @@ type UnusedXTOSet struct {
 	chain *Blockchain
 }
 
+func NewUnusedXTOSet(chain *Blockchain) *UnusedXTOSet {
+	return &UnusedXTOSet{chain}
+}
 func (u *UnusedXTOSet) CountUnusedTxOutputs() int {
 	counter := u.chain.crud.CountByPrefix(utxoPrefix)
 

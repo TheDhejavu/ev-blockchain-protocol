@@ -25,14 +25,14 @@ type TxAcInput struct {
 	TxID            []byte
 	Signers         [][]byte
 	SigWitnesses    [][]byte
-	TxOut           string
+	TxOut           []byte
 	ElectionKeyHash []byte
 	AccreditedCount int64
 	Timestamp       int64
 }
 
 // NewTxAccreditationInput Stops Accreditation  Phase
-func NewAccreditationTxInput(keyHash, txId []byte, txOut string, signers, SigWitnesses [][]byte, count int64, timestamp int64) *TxInput {
+func NewAccreditationTxInput(keyHash, txId []byte, txOut []byte, signers, SigWitnesses [][]byte, count int64, timestamp int64) *TxInput {
 	tx := &TxInput{
 		AccreditationTx: TxAcInput{
 			TxID:            txId,

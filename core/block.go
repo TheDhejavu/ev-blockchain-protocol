@@ -100,6 +100,7 @@ func (b *Block) IsBlockValid(oldBlock Block) bool {
 		return false
 	}
 	res := bytes.Compare(oldBlock.Hash, b.PrevHash)
+
 	if res != 0 {
 		return false
 	}
@@ -118,6 +119,11 @@ func (b *Block) IsBlockValid(oldBlock Block) bool {
 
 // Genesis block
 func Genesis(firstTx *Transaction, version int) *Block {
-	newBlock := NewBlock([]*Transaction{firstTx}, version, []byte{}, 1)
+	newBlock := NewBlock(
+		[]*Transaction{firstTx},
+		version,
+		[]byte{},
+		1,
+	)
 	return newBlock
 }

@@ -24,18 +24,16 @@ type TxElectionOutput struct {
 
 // End Election TxInput
 type TxElectionInput struct {
-	TxID            []byte
 	Signers         [][]byte
 	SigWitnesses    [][]byte
-	TxOut           string
+	TxOut           []byte
 	ElectionKeyHash []byte
 }
 
 // NewTxAccreditationInput Stops Accreditation  Phase
-func NewElectionTxInput(keyHash, txId []byte, txOut string, signers, SigWitnesses [][]byte) *TxInput {
+func NewElectionTxInput(keyHash, txOut []byte, signers, SigWitnesses [][]byte) *TxInput {
 	tx := &TxInput{
 		ElectionTx: TxElectionInput{
-			TxID:            txId,
 			Signers:         signers,
 			SigWitnesses:    SigWitnesses,
 			ElectionKeyHash: keyHash,
@@ -95,7 +93,6 @@ func (tx *TxElectionOutput) IsSet() bool {
 // Trim election input data
 func (tx *TxElectionInput) TrimmedCopy() *TxElectionInput {
 	txCopy := &TxElectionInput{
-		tx.TxID,
 		nil,
 		nil,
 		tx.TxOut,
@@ -121,16 +118,17 @@ func (tx *TxElectionInput) IsSet() bool {
 // Helper function for displaying transaction data in the console
 func (tx *TxElectionInput) String() string {
 	var lines []string
-	lines = append(lines, fmt.Sprintf("--TX_INPUT: %x", tx.TxID))
+	lines = append(lines, fmt.Sprintf("--TX_INPUT: "))
 	if tx.IsSet() {
+		lines = append(lines, fmt.Sprintf("	Signers"))
 		for i := 0; i < len(tx.Signers); i++ {
-			lines = append(lines, fmt.Sprintf("(Signers) \n --(%d): %x", i, tx.Signers[i]))
+			lines = append(lines, fmt.Sprintf("		--(%d): %x", i, tx.Signers[i]))
 		}
+		lines = append(lines, fmt.Sprintf("	Signature Witnesses:"))
 		for i := 0; i < len(tx.SigWitnesses); i++ {
-			lines = append(lines, fmt.Sprintf("(Signature Witness): \n --(%d): %x", i, tx.SigWitnesses[i]))
+			lines = append(lines, fmt.Sprintf("		--(%d): %x", i, tx.SigWitnesses[i]))
 		}
-		lines = append(lines, fmt.Sprintf("TxOut: %s", tx.TxOut))
-		lines = append(lines, fmt.Sprintf("Election Keyhash: %x", tx.ElectionKeyHash))
+		lines = append(lines, fmt.Sprintf("	Election Keyhash: %s", tx.ElectionKeyHash))
 	}
 
 	return strings.Join(lines, "\n")
@@ -139,19 +137,21 @@ func (tx *TxElectionInput) String() string {
 // Helper function for displaying transaction data in the console
 func (tx *TxElectionOutput) String() string {
 	var lines []string
+	lines = append(lines, fmt.Sprintf("--TX_OUTPUT \n"))
 	if tx.IsSet() {
-		lines = append(lines, fmt.Sprintf("--TX_OUTPUT \n(ID): %x", tx.ID))
-		lines = append(lines, fmt.Sprintf("(TxID): %x", tx.ID))
-		lines = append(lines, fmt.Sprintf("(Title): %s", tx.Title))
+		lines = append(lines, fmt.Sprintf("	ID: %s", tx.ID))
+		lines = append(lines, fmt.Sprintf("	Title: %s", tx.Title))
+		lines = append(lines, fmt.Sprintf("	Signers"))
 		for i := 0; i < len(tx.Signers); i++ {
-			lines = append(lines, fmt.Sprintf("(Signers) \n --(%d): %x", i, tx.Signers[i]))
+			lines = append(lines, fmt.Sprintf("		--(%d): %x", i, tx.Signers[i]))
 		}
+		lines = append(lines, fmt.Sprintf("	Signature Witnesses:"))
 		for i := 0; i < len(tx.SigWitnesses); i++ {
-			lines = append(lines, fmt.Sprintf("(Signature Witness): \n --(%d): %x", i, tx.SigWitnesses[i]))
+			lines = append(lines, fmt.Sprintf("		--(%d): %x", i, tx.SigWitnesses[i]))
 		}
-		lines = append(lines, fmt.Sprintf("(Description): %s", tx.Description))
-		lines = append(lines, fmt.Sprintf("(People): %d", tx.TotalPeople))
-		lines = append(lines, fmt.Sprintf("(Election Keyhash): %x", tx.ElectionKeyHash))
+		lines = append(lines, fmt.Sprintf("	Description: %s", tx.Description))
+		lines = append(lines, fmt.Sprintf("	People: %d", tx.TotalPeople))
+		lines = append(lines, fmt.Sprintf("	Election Keyhash: %s", tx.ElectionKeyHash))
 	}
 	return strings.Join(lines, "\n")
 }

@@ -43,9 +43,9 @@ type Transaction struct {
 }
 
 // Create new Transaction
-func NewTransaction(txType string, keyHash []byte, input TxInput, output TxOutput) (*Transaction, error) {
+func NewTransaction(txType string, keyHash []byte, input TxInput, output TxOutput, utxo *UnusedXTOSet) (*Transaction, error) {
 	rand.Seed(time.Now().Unix())
-
+	
 	tx := Transaction{
 		ID:      nil,
 		Input:   input,

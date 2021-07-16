@@ -27,12 +27,12 @@ type TxVotingInput struct {
 	Signers         [][]byte // TransVotingtion Signatures from signers
 	SigWitnesses    [][]byte
 	ElectionKeyHash []byte
-	TxOut           string
+	TxOut           []byte
 	Timestamp       int64
 }
 
 // NewTxVotingInput  ENDS Voting Phase
-func NewVotingTxInput(keyHash, txId []byte, txOut string, signers, SigWitnesses [][]byte, timestamp int64) *TxInput {
+func NewVotingTxInput(keyHash, txId []byte, txOut []byte, signers, SigWitnesses [][]byte, timestamp int64) *TxInput {
 	tx := &TxInput{
 		VotingTx: TxVotingInput{
 			TxID:            txId,

@@ -85,12 +85,11 @@ func TestCrypto() {
 	r, _ := mu.Verify([]byte("hello-word"))
 	fmt.Println(r)
 }
-func NewElectionEnd(txId []byte, txOut string) *blockchain.Transaction {
+func NewElectionEnd(txOut []byte, utxo *blockchain.UnusedXTOSet) *blockchain.Transaction {
 	var electionTx *blockchain.Transaction
 
 	txIn := blockchain.NewElectionTxInput(
 		keyHash,
-		txId,
 		txOut,
 		signers,
 		SigWitnesses,
@@ -107,6 +106,7 @@ func NewElectionEnd(txId []byte, txOut string) *blockchain.Transaction {
 		keyHash,
 		*txIn,
 		blockchain.TxOutput{},
+		utxo,
 	)
 
 	electionTx.Input.ElectionTx.SigWitnesses = mu.Sigs
@@ -152,6 +152,7 @@ func NewElectionStart() *blockchain.Transaction {
 		keyHash,
 		blockchain.TxInput{},
 		*txOut,
+		&blockchain.UnusedXTOSet{},
 	)
 
 	eTx.Output.ElectionTx.SigWitnesses = SigWitnesses
@@ -160,7 +161,7 @@ func NewElectionStart() *blockchain.Transaction {
 	return eTx
 }
 
-func NewAccreditationEnd(txId []byte, txOut string, count int64) *blockchain.Transaction {
+func NewAccreditationEnd(txId []byte, txOut []byte, count int64, utxo *blockchain.UnusedXTOSet) *blockchain.Transaction {
 	var acTx *blockchain.Transaction
 
 	txAcIn := blockchain.NewAccreditationTxInput(
@@ -184,6 +185,7 @@ func NewAccreditationEnd(txId []byte, txOut string, count int64) *blockchain.Tra
 		keyHash,
 		*txAcIn,
 		blockchain.TxOutput{},
+		utxo,
 	)
 
 	acTx.Input.AccreditationTx.SigWitnesses = mu.Sigs
@@ -214,6 +216,7 @@ func NewAccreditationStart(txID []byte) *blockchain.Transaction {
 		keyHash,
 		blockchain.TxInput{},
 		*txAccreditationOut,
+		&blockchain.UnusedXTOSet{},
 	)
 
 	eaTx.Output.AccreditationTx.SigWitnesses = mu.Sigs
@@ -222,7 +225,7 @@ func NewAccreditationStart(txID []byte) *blockchain.Transaction {
 	return eaTx
 }
 
-func NewVotingEnd(txId []byte, txOut string) *blockchain.Transaction {
+func NewVotingEnd(txId []byte, txOut []byte, utxo *blockchain.UnusedXTOSet) *blockchain.Transaction {
 	var vTx *blockchain.Transaction
 
 	txVotingIn := blockchain.NewVotingTxInput(
@@ -245,6 +248,7 @@ func NewVotingEnd(txId []byte, txOut string) *blockchain.Transaction {
 		keyHash,
 		*txVotingIn,
 		blockchain.TxOutput{},
+		utxo,
 	)
 
 	vTx.Input.VotingTx.SigWitnesses = mu.Sigs
@@ -275,6 +279,7 @@ func NewVotingStart(txId []byte) *blockchain.Transaction {
 		keyHash,
 		blockchain.TxInput{},
 		*txVotingOut,
+		&blockchain.UnusedXTOSet{},
 	)
 
 	vTx.Output.VotingTx.SigWitnesses = mu.Sigs
@@ -309,6 +314,7 @@ func NewBallot(txId []byte) *blockchain.Transaction {
 		keyHash,
 		blockchain.TxInput{},
 		*bTxOut,
+		&blockchain.UnusedXTOSet{},
 	)
 
 	bTx.Output.BallotTx.SigWitnesses = mu.Sigs
@@ -326,7 +332,7 @@ func NewBallot(txId []byte) *blockchain.Transaction {
 	return bTx
 }
 
-func CastBallot(txId []byte, txOut string) *blockchain.Transaction {
+func CastBallot(txId []byte, txOut []byte, utxo *blockchain.UnusedXTOSet) *blockchain.Transaction {
 	var bTx *blockchain.Transaction
 
 	bTxIn := blockchain.NewBallotTxInput(
@@ -344,6 +350,7 @@ func CastBallot(txId []byte, txOut string) *blockchain.Transaction {
 		keyHash,
 		*bTxIn,
 		blockchain.TxOutput{},
+		utxo,
 	)
 
 	// Sign message
@@ -364,30 +371,23 @@ func CastBallot(txId []byte, txOut string) *blockchain.Transaction {
 
 func main() {
 	GenerateMainWallet()
+	utxo := blockchain.NewUnusedXTOSet(&blockchain.Blockchain{})
 	txElectionStart := NewElectionStart()
-	txElectionEnd := NewElectionEnd(
-		txElectionStart.ID,
-		txElectionStart.Output.ElectionTx.ID,
-	)
+	txElectionEnd := NewElectionEnd(txElectionStart.ID, utxo)
 
 	txAccreditationStart := NewAccreditationStart(txElectionStart.ID)
 	txAccreditationEnd := NewAccreditationEnd(
 		txElectionStart.ID,
-		txElectionStart.Output.ElectionTx.ID,
+		txAccreditationStart.ID,
 		100,
+		utxo,
 	)
 
 	txVotingStart := NewVotingStart(txElectionStart.ID)
-	txVotingEnd := NewVotingEnd(
-		txElectionStart.ID,
-		txElectionStart.Output.VotingTx.ID,
-	)
+	txVotingEnd := NewVotingEnd(txElectionStart.ID, txVotingStart.ID, utxo)
 
 	txNewBallot := NewBallot(txElectionStart.ID)
-	txCastBallot := CastBallot(
-		txElectionStart.ID,
-		txNewBallot.Output.BallotTx.ID,
-	)
+	txCastBallot := CastBallot(txElectionStart.ID, txNewBallot.ID, utxo)
 
 	fmt.Println(
 		"VERIFY_ELECTION_START",

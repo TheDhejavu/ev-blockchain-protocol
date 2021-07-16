@@ -69,7 +69,7 @@ func (crud *Crud) GetBlock(key []byte) (Block, error) {
 	return block, err
 }
 
-//Aggregate and get all block hashes in the blockchain
+// Aggregate and get all block hashes in the blockchain
 func (crud *Crud) GetBlockHashes(height int) ([][]byte, error) {
 	var blockHashes [][]byte
 
@@ -182,6 +182,7 @@ func (crud *Crud) FindTransactionByKeyHash(keyHash []byte) (Transaction, error) 
 
 func (crud *Crud) Iterator() (*Iterator, error) {
 	lastHash, err := crud.GetLastHash()
+
 	if err != nil {
 		return nil, err
 	}

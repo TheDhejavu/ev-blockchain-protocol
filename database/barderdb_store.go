@@ -106,19 +106,14 @@ func (b *BadgerDBStore) Close() error {
 }
 
 func openDB(dir string, opts badger.Options) (*badger.DB, error) {
-
 	if db, err := badger.Open(opts); err != nil {
-
 		if strings.Contains(err.Error(), "LOCK") {
-
 			if db, err := retry(dir, opts); err == nil {
 				logger.Panicln("database unlocked , value log truncated ")
 				return db, nil
 			}
-
 			logger.Panicln("could not unlock database", err)
 		}
-
 		return nil, err
 	} else {
 		return db, nil
@@ -127,11 +122,9 @@ func openDB(dir string, opts badger.Options) (*badger.DB, error) {
 
 func retry(dir string, originalOpts badger.Options) (*badger.DB, error) {
 	lockPath := filepath.Join(dir, "LOCK")
-
 	if err := os.Remove(lockPath); err != nil {
 		return nil, fmt.Errorf(`removing "LOCK": %s`, err)
 	}
-
 	retryOpts := originalOpts
 	retryOpts.Truncate = true
 	db, err := badger.Open(retryOpts)
@@ -153,6 +146,15 @@ func databaseExists(path string) bool {
 	return true
 }
 
+func RemoveDatabase(name string) error {
+	path := getDatabasePath(name)
+	err := os.RemoveAll(path)
+	if err != nil {
+		logger.Error("Remove Error occurred:", err)
+		return err
+	}
+	return nil
+}
 func openBardgerDB(name string) *badger.DB {
 	path := getDatabasePath(name)
 

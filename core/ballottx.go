@@ -29,14 +29,14 @@ type TxBallotInput struct {
 	TxID            []byte
 	Signature       []byte
 	PubKeys         [][]byte
-	TxOut           string
+	TxOut           []byte
 	Candidate       []byte
 	ElectionKeyHash []byte
 	Timestamp       int64
 }
 
 // NewTxBallotInput CASTS Vote using secret ballot
-func NewBallotTxInput(keyHash, candidate, txId []byte, txOut string, signature []byte, pubKeys [][]byte, timestamp int64) *TxInput {
+func NewBallotTxInput(keyHash, candidate, txId []byte, txOut []byte, signature []byte, pubKeys [][]byte, timestamp int64) *TxInput {
 	tx := &TxInput{
 		BallotTx: TxBallotInput{
 			TxID:            txId,
@@ -160,7 +160,7 @@ func (tx *TxBallotOutput) String() string {
 			lines = append(lines, fmt.Sprintf("(Signature Witness): \n --(%d): %x", i, tx.SigWitnesses[i]))
 		}
 		lines = append(lines, fmt.Sprintf("(Secret Message): %x", tx.SecretMessage))
-		lines = append(lines, fmt.Sprintf("(Election Keyhash): %x", tx.ElectionKeyHash))
+		lines = append(lines, fmt.Sprintf("(Election Keyhash): %s", tx.ElectionKeyHash))
 	}
 	return strings.Join(lines, "\n")
 }
