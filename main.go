@@ -17,17 +17,17 @@ import (
 const numOfKeys = 3
 
 var (
-	DefaultCurve = elliptic.P256()
-	keyring      *ringsig.PublicKeyRing
-	privKey      *ecdsa.PrivateKey
-	signature    *ringsig.RingSign
-	keyRingByte  [][]byte
-	signers      [][]byte
-	privKeys     []*ecdsa.PrivateKey
-	candidates   [][]byte
-	SigWitnesses [][]byte
-	keyHash      = []byte("election_x")
-	sysWallet    *wallet.WalletGroup
+	DefaultCurve   = elliptic.P256()
+	keyring        *ringsig.PublicKeyRing
+	privKey        *ecdsa.PrivateKey
+	signature      *ringsig.RingSign
+	keyRingByte    [][]byte
+	signers        [][]byte
+	privKeys       []*ecdsa.PrivateKey
+	candidates     [][]byte
+	SigWitnesses   [][]byte
+	electionPubkey = []byte("election_x")
+	sysWallet      *wallet.WalletGroup
 )
 
 func GenerateMainWallet() {
@@ -89,7 +89,7 @@ func NewElectionEnd(txOut []byte, utxo *blockchain.UnusedXTOSet) *blockchain.Tra
 	var electionTx *blockchain.Transaction
 
 	txIn := blockchain.NewElectionTxInput(
-		keyHash,
+		electionPubkey,
 		txOut,
 		signers,
 		SigWitnesses,
@@ -103,7 +103,7 @@ func NewElectionEnd(txOut []byte, utxo *blockchain.UnusedXTOSet) *blockchain.Tra
 
 	electionTx, _ = blockchain.NewTransaction(
 		blockchain.ELECTION_TX_TYPE,
-		keyHash,
+		electionPubkey,
 		*txIn,
 		blockchain.TxOutput{},
 		utxo,
@@ -127,7 +127,7 @@ func NewElectionStart() *blockchain.Transaction {
 	txOut := blockchain.NewElectionTxOutput(
 		"Presidential Election",
 		"President",
-		keyHash,
+		electionPubkey,
 		nil,
 		nil,
 		candidates,
@@ -149,7 +149,7 @@ func NewElectionStart() *blockchain.Transaction {
 
 	eTx, _ = blockchain.NewTransaction(
 		blockchain.ELECTION_TX_TYPE,
-		keyHash,
+		electionPubkey,
 		blockchain.TxInput{},
 		*txOut,
 		&blockchain.UnusedXTOSet{},
@@ -165,7 +165,7 @@ func NewAccreditationEnd(txId []byte, txOut []byte, count int64, utxo *blockchai
 	var acTx *blockchain.Transaction
 
 	txAcIn := blockchain.NewAccreditationTxInput(
-		keyHash,
+		electionPubkey,
 		txId,
 		txOut,
 		nil,
@@ -182,7 +182,7 @@ func NewAccreditationEnd(txId []byte, txOut []byte, count int64, utxo *blockchai
 
 	acTx, _ = blockchain.NewTransaction(
 		blockchain.ACCREDITATION_TX_TYPE,
-		keyHash,
+		electionPubkey,
 		*txAcIn,
 		blockchain.TxOutput{},
 		utxo,
@@ -197,7 +197,7 @@ func NewAccreditationEnd(txId []byte, txOut []byte, count int64, utxo *blockchai
 func NewAccreditationStart(txID []byte) *blockchain.Transaction {
 	var eaTx *blockchain.Transaction
 	txAccreditationOut := blockchain.NewAccreditationTxOutput(
-		keyHash,
+		electionPubkey,
 		txID,
 		nil,
 		nil,
@@ -213,7 +213,7 @@ func NewAccreditationStart(txID []byte) *blockchain.Transaction {
 
 	eaTx, _ = blockchain.NewTransaction(
 		blockchain.ACCREDITATION_TX_TYPE,
-		keyHash,
+		electionPubkey,
 		blockchain.TxInput{},
 		*txAccreditationOut,
 		&blockchain.UnusedXTOSet{},
@@ -229,7 +229,7 @@ func NewVotingEnd(txId []byte, txOut []byte, utxo *blockchain.UnusedXTOSet) *blo
 	var vTx *blockchain.Transaction
 
 	txVotingIn := blockchain.NewVotingTxInput(
-		keyHash,
+		electionPubkey,
 		txId,
 		txOut,
 		nil,
@@ -245,7 +245,7 @@ func NewVotingEnd(txId []byte, txOut []byte, utxo *blockchain.UnusedXTOSet) *blo
 
 	vTx, _ = blockchain.NewTransaction(
 		blockchain.VOTING_TX_TYPE,
-		keyHash,
+		electionPubkey,
 		*txVotingIn,
 		blockchain.TxOutput{},
 		utxo,
@@ -259,9 +259,8 @@ func NewVotingEnd(txId []byte, txOut []byte, utxo *blockchain.UnusedXTOSet) *blo
 
 func NewVotingStart(txId []byte) *blockchain.Transaction {
 	var vTx *blockchain.Transaction
-
 	txVotingOut := blockchain.NewVotingTxOutput(
-		keyHash,
+		electionPubkey,
 		txId,
 		nil,
 		nil,
@@ -276,7 +275,7 @@ func NewVotingStart(txId []byte) *blockchain.Transaction {
 
 	vTx, _ = blockchain.NewTransaction(
 		blockchain.VOTING_TX_TYPE,
-		keyHash,
+		electionPubkey,
 		blockchain.TxInput{},
 		*txVotingOut,
 		&blockchain.UnusedXTOSet{},
@@ -294,7 +293,7 @@ func NewBallot(txId []byte) *blockchain.Transaction {
 	msg, _ := sysWallet.View.Encrypt(secretMessage)
 
 	bTxOut := blockchain.NewBallotTxOutput(
-		keyHash,
+		electionPubkey,
 		msg,
 		txId,
 		nil,
@@ -311,7 +310,7 @@ func NewBallot(txId []byte) *blockchain.Transaction {
 
 	bTx, _ = blockchain.NewTransaction(
 		blockchain.BALLOT_TX_TYPE,
-		keyHash,
+		electionPubkey,
 		blockchain.TxInput{},
 		*bTxOut,
 		&blockchain.UnusedXTOSet{},
@@ -336,7 +335,7 @@ func CastBallot(txId []byte, txOut []byte, utxo *blockchain.UnusedXTOSet) *block
 	var bTx *blockchain.Transaction
 
 	bTxIn := blockchain.NewBallotTxInput(
-		keyHash,
+		electionPubkey,
 		candidates[0],
 		txId,
 		txOut,
@@ -347,7 +346,7 @@ func CastBallot(txId []byte, txOut []byte, utxo *blockchain.UnusedXTOSet) *block
 
 	bTx, _ = blockchain.NewTransaction(
 		blockchain.BALLOT_TX_TYPE,
-		keyHash,
+		electionPubkey,
 		*bTxIn,
 		blockchain.TxOutput{},
 		utxo,

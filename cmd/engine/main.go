@@ -4,6 +4,8 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"fmt"
+	"log"
+	"time"
 
 	logger "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -18,18 +20,18 @@ import (
 const numOfKeys = 3
 
 var (
-	DefaultCurve = elliptic.P256()
-	keyring      *ringsig.PublicKeyRing
-	privKey      *ecdsa.PrivateKey
-	signature    *ringsig.RingSign
-	keyRingByte  [][]byte
-	signers      [][]byte
-	privKeys     []*ecdsa.PrivateKey
-	candidates   [][]byte
-	SigWitnesses [][]byte
-	keyHash      = []byte("election_x")
-	sysWallet    *wallet.WalletGroup
-	sigCount     = 4
+	DefaultCurve   = elliptic.P256()
+	keyring        *ringsig.PublicKeyRing
+	privKey        *ecdsa.PrivateKey
+	signature      *ringsig.RingSign
+	keyRingByte    [][]byte
+	signers        [][]byte
+	privKeys       []*ecdsa.PrivateKey
+	candidates     [][]byte
+	SigWitnesses   [][]byte
+	electionPubkey = []byte("2_election_12345678")
+	sysWallet      *wallet.WalletGroup
+	sigCount       = 4
 )
 
 func GenerateMainWallet() {
@@ -79,7 +81,16 @@ func NewCommands() []*cobra.Command {
 			bc := blockchain.NewBlockchain(getStore(), config.Config{})
 			bc = bc.ReInit()
 			bc.ResetBlockchain("4000")
-
+		},
+	}
+	var queryResultCommand = &cobra.Command{
+		Use:   "result",
+		Short: "Manage election results",
+		Args:  cobra.MinimumNArgs(0),
+		Run: func(cmd *cobra.Command, args []string) {
+			bc := blockchain.NewBlockchain(getStore(), config.Config{})
+			bc = bc.ReInit()
+			fmt.Println(bc.QueryResult(electionPubkey))
 		},
 	}
 
@@ -95,15 +106,17 @@ func NewCommands() []*cobra.Command {
 	}
 	var start bool
 	var stop bool
+	var castBallot bool
+	var getBallot bool
 
-	var newElectionCommand = &cobra.Command{
+	var electionCommand = &cobra.Command{
 		Use:   "election",
 		Short: "manage elections",
 		Args:  cobra.MinimumNArgs(0),
 		Run: func(cmd *cobra.Command, args []string) {
 			bc := blockchain.NewBlockchain(getStore(), config.Config{})
 			bc = bc.ReInit()
-			utxo := blockchain.NewUnusedXTOSet(bc)
+
 			if start {
 				var eTx *blockchain.Transaction
 
@@ -114,10 +127,14 @@ func NewCommands() []*cobra.Command {
 					candidates = append(candidates, w.Main.PublicKey)
 				}
 
+				_, err := bc.GetTransactionByPubkey(electionPubkey)
+				if err == nil {
+					logger.Fatal("Election publickey already exist")
+				}
 				txOut := blockchain.NewElectionTxOutput(
 					"Presidential Election",
 					"President",
-					keyHash,
+					electionPubkey,
 					nil,
 					nil,
 					candidates,
@@ -149,10 +166,10 @@ func NewCommands() []*cobra.Command {
 
 				eTx, _ = blockchain.NewTransaction(
 					blockchain.ELECTION_TX_TYPE,
-					keyHash,
+					electionPubkey,
 					blockchain.TxInput{},
 					*txOut,
-					utxo,
+					&blockchain.UnusedXTOSet{},
 				)
 
 				eTx.Output.ElectionTx.SigWitnesses = SigWitnesses
@@ -164,11 +181,15 @@ func NewCommands() []*cobra.Command {
 					logger.Error("Add Block Error:", err)
 				}
 				fmt.Println("Block added  sucessfully: \n", block)
-			} else {
+			}
+
+			if stop {
+				utxo := blockchain.NewUnusedXTOSet(bc)
+
 				var electionTx *blockchain.Transaction
-				txOut := bc.GetTransactionByKeyHash(keyHash)
+				txOut, _ := bc.GetElectionTxByPubkey(electionPubkey)
 				txIn := blockchain.NewElectionTxInput(
-					keyHash,
+					electionPubkey,
 					txOut.ID,
 					signers,
 					SigWitnesses,
@@ -192,7 +213,7 @@ func NewCommands() []*cobra.Command {
 
 				electionTx, _ = blockchain.NewTransaction(
 					blockchain.ELECTION_TX_TYPE,
-					keyHash,
+					electionPubkey,
 					*txIn,
 					blockchain.TxOutput{},
 					utxo,
@@ -209,15 +230,377 @@ func NewCommands() []*cobra.Command {
 			}
 		},
 	}
+	var accreditationCommand = &cobra.Command{
+		Use:   "ac",
+		Short: "manage accreditation txs",
+		Args:  cobra.MinimumNArgs(0),
+		Run: func(cmd *cobra.Command, args []string) {
+			bc := blockchain.NewBlockchain(getStore(), config.Config{})
+			bc = bc.ReInit()
 
-	newElectionCommand.Flags().BoolVar(&start, "start", false, "Start Election")
-	newElectionCommand.Flags().BoolVar(&stop, "stop", false, "Stop Election")
+			if start {
+				var eaTx *blockchain.Transaction
+
+				txOut, _ := bc.GetElectionTxByPubkey(electionPubkey)
+				if txOut.ID == nil {
+					logger.Fatal("Error: No correspoding election TxOut")
+				}
+				txAccreditationOut := blockchain.NewAccreditationTxOutput(
+					electionPubkey,
+					txOut.ID,
+					nil,
+					nil,
+					time.Now().Unix(),
+				)
+				mu := multisig.NewMultisig(sigCount)
+				for i := 0; i < sigCount; i++ {
+					// Initialize system identity wallet
+					wallets, _ := wallet.InitializeWallets()
+					userId := fmt.Sprintf("signers_%d", i)
+					w, err := wallets.GetWallet(userId)
+					if err != nil {
+						logger.Panic(err)
+					}
+					mu.AddSignature(
+						txAccreditationOut.AccreditationTx.ToByte(),
+						w.Main.PublicKey,
+						w.Main.PrivateKey,
+					)
+					privKeys = append(privKeys, &w.Main.PrivateKey)
+				}
+
+				eaTx, _ = blockchain.NewTransaction(
+					blockchain.ACCREDITATION_TX_TYPE,
+					electionPubkey,
+					blockchain.TxInput{},
+					*txAccreditationOut,
+					&blockchain.UnusedXTOSet{},
+				)
+
+				eaTx.Output.AccreditationTx.SigWitnesses = mu.Sigs
+				eaTx.Output.AccreditationTx.Signers = mu.PubKeys
+
+				block, err := bc.AddBlock([]*blockchain.Transaction{eaTx})
+
+				if err != nil {
+					logger.Error("Add Block Error:", err)
+				}
+				fmt.Println("Block added  sucessfully: \n", block)
+			}
+
+			if stop {
+				utxo := blockchain.NewUnusedXTOSet(bc)
+
+				var acTx *blockchain.Transaction
+				txElectionOut, _ := bc.GetElectionTxByPubkey(electionPubkey)
+				txAcOut, _ := bc.GetAcTxByPubkey(electionPubkey)
+				fmt.Printf("%x", txAcOut.ID)
+				// return
+				txAcIn := blockchain.NewAccreditationTxInput(
+					electionPubkey,
+					txElectionOut.ID,
+					txAcOut.ID,
+					nil,
+					nil,
+					100,
+					time.Now().Unix(),
+				)
+				mu := multisig.NewMultisig(sigCount)
+				for i := 0; i < sigCount; i++ {
+					// Initialize system identity wallet
+					wallets, _ := wallet.InitializeWallets()
+					userId := fmt.Sprintf("signers_%d", i)
+					w, err := wallets.GetWallet(userId)
+					if err != nil {
+						logger.Panic(err)
+					}
+					mu.AddSignature(
+						txAcIn.AccreditationTx.ToByte(),
+						w.Main.PublicKey,
+						w.Main.PrivateKey,
+					)
+					privKeys = append(privKeys, &w.Main.PrivateKey)
+				}
+
+				acTx, _ = blockchain.NewTransaction(
+					blockchain.ACCREDITATION_TX_TYPE,
+					electionPubkey,
+					*txAcIn,
+					blockchain.TxOutput{},
+					utxo,
+				)
+
+				acTx.Input.AccreditationTx.SigWitnesses = mu.Sigs
+				acTx.Input.AccreditationTx.Signers = mu.PubKeys
+
+				block, err := bc.AddBlock([]*blockchain.Transaction{acTx})
+
+				if err != nil {
+					logger.Error("Add Block Error:", err)
+				}
+				fmt.Println("Block added  sucessfully: \n", block)
+			}
+		},
+	}
+
+	var votingCommand = &cobra.Command{
+		Use:   "voting",
+		Short: "manage voting txs",
+		Args:  cobra.MinimumNArgs(0),
+		Run: func(cmd *cobra.Command, args []string) {
+			bc := blockchain.NewBlockchain(getStore(), config.Config{})
+			bc = bc.ReInit()
+
+			if start {
+				var vtTx *blockchain.Transaction
+
+				txOut, _ := bc.GetElectionTxByPubkey(electionPubkey)
+				if txOut.ID == nil {
+					logger.Fatal("Error: No correspoding election TxOut")
+				}
+				txVotingOut := blockchain.NewVotingTxOutput(
+					electionPubkey,
+					txOut.ID,
+					nil,
+					nil,
+					time.Now().Unix(),
+				)
+				mu := multisig.NewMultisig(sigCount)
+				for i := 0; i < sigCount; i++ {
+					// Initialize system identity wallet
+					wallets, _ := wallet.InitializeWallets()
+					userId := fmt.Sprintf("signers_%d", i)
+					w, err := wallets.GetWallet(userId)
+					if err != nil {
+						logger.Panic(err)
+					}
+					mu.AddSignature(
+						txVotingOut.VotingTx.ToByte(),
+						w.Main.PublicKey,
+						w.Main.PrivateKey,
+					)
+					privKeys = append(privKeys, &w.Main.PrivateKey)
+				}
+
+				vtTx, _ = blockchain.NewTransaction(
+					blockchain.VOTING_TX_TYPE,
+					electionPubkey,
+					blockchain.TxInput{},
+					*txVotingOut,
+					&blockchain.UnusedXTOSet{},
+				)
+
+				vtTx.Output.VotingTx.SigWitnesses = mu.Sigs
+				vtTx.Output.VotingTx.Signers = mu.PubKeys
+
+				block, err := bc.AddBlock([]*blockchain.Transaction{vtTx})
+
+				if err != nil {
+					logger.Error("Add Block Error:", err)
+				}
+				fmt.Println("Block added  sucessfully: \n", block)
+			}
+
+			if stop {
+				utxo := blockchain.NewUnusedXTOSet(bc)
+
+				var vTx *blockchain.Transaction
+				txElectionOut, _ := bc.GetElectionTxByPubkey(electionPubkey)
+				txVotingOut, _ := bc.GetVotingTxByPubkey(electionPubkey)
+				fmt.Printf("%x", txVotingOut.ID)
+				// return
+				txVotingIn := blockchain.NewVotingTxInput(
+					electionPubkey,
+					txElectionOut.ID,
+					txVotingOut.ID,
+					nil,
+					nil,
+					time.Now().Unix(),
+				)
+				mu := multisig.NewMultisig(sigCount)
+				for i := 0; i < sigCount; i++ {
+					// Initialize system identity wallet
+					wallets, _ := wallet.InitializeWallets()
+					userId := fmt.Sprintf("signers_%d", i)
+					w, err := wallets.GetWallet(userId)
+					if err != nil {
+						logger.Panic(err)
+					}
+					mu.AddSignature(
+						txVotingIn.VotingTx.ToByte(),
+						w.Main.PublicKey,
+						w.Main.PrivateKey,
+					)
+					privKeys = append(privKeys, &w.Main.PrivateKey)
+				}
+
+				vTx, _ = blockchain.NewTransaction(
+					blockchain.VOTING_TX_TYPE,
+					electionPubkey,
+					*txVotingIn,
+					blockchain.TxOutput{},
+					utxo,
+				)
+
+				vTx.Input.VotingTx.SigWitnesses = mu.Sigs
+				vTx.Input.VotingTx.Signers = mu.PubKeys
+
+				block, err := bc.AddBlock([]*blockchain.Transaction{vTx})
+
+				if err != nil {
+					logger.Error("Add Block Error:", err)
+				}
+				fmt.Println("Block added  sucessfully: \n", block)
+			}
+		},
+	}
+
+	var ballotCommand = &cobra.Command{
+		Use:   "ballot",
+		Short: "manage ballot txs",
+		Args:  cobra.MinimumNArgs(0),
+		Run: func(cmd *cobra.Command, args []string) {
+			bc := blockchain.NewBlockchain(getStore(), config.Config{})
+			bc = bc.ReInit()
+
+			if getBallot {
+				logger.Info("Get Ballot!!!!!!!!")
+				var bTx *blockchain.Transaction
+				secretMessage := []byte("This is my ballot secret message")
+				msg, _ := sysWallet.View.Encrypt(secretMessage)
+				txElectionOut, err := bc.GetElectionTxByPubkey(electionPubkey)
+				if err != nil {
+					logger.Error("Error:", err)
+				}
+
+				bTxOut := blockchain.NewBallotTxOutput(
+					electionPubkey,
+					msg,
+					txElectionOut.ID,
+					nil,
+					nil,
+					nil,
+					time.Now().Unix(),
+				)
+
+				mu := multisig.NewMultisig(sigCount)
+				for i := 0; i < sigCount; i++ {
+					// Initialize system identity wallet
+					wallets, _ := wallet.InitializeWallets()
+					userId := fmt.Sprintf("signers_%d", i)
+					w, err := wallets.GetWallet(userId)
+					if err != nil {
+						logger.Panic(err)
+					}
+					mu.AddSignature(
+						bTxOut.BallotTx.ToByte(),
+						w.Main.PublicKey,
+						w.Main.PrivateKey,
+					)
+					privKeys = append(privKeys, &w.Main.PrivateKey)
+				}
+
+				bTx, _ = blockchain.NewTransaction(
+					blockchain.BALLOT_TX_TYPE,
+					electionPubkey,
+					blockchain.TxInput{},
+					*bTxOut,
+					&blockchain.UnusedXTOSet{},
+				)
+
+				bTx.Output.BallotTx.SigWitnesses = mu.Sigs
+				bTx.Output.BallotTx.Signers = mu.PubKeys
+
+				// Generate Decoy keys
+				for i := 0; i < numOfKeys-1; i++ {
+					w := wallet.MakeWalletGroup()
+					// add the public key part to the ring
+					keyring.Add(w.Main.PrivateKey.PublicKey)
+					keyRingByte = append(keyRingByte, w.Main.PublicKey)
+				}
+				bTx.Output.BallotTx.PubKeys = keyRingByte
+
+				block, err := bc.AddBlock([]*blockchain.Transaction{bTx})
+
+				if err != nil {
+					logger.Error("Add Block Error:", err)
+				}
+				fmt.Println("Block added  sucessfully: \n", block)
+
+			}
+
+			if castBallot {
+				logger.Info("Cast Ballot!!!!!!!!")
+				var bTx *blockchain.Transaction
+				utxo := blockchain.NewUnusedXTOSet(bc)
+
+				txElectionOut, _ := bc.GetElectionTxByPubkey(electionPubkey)
+				txBallotOut, _ := bc.GetBallotTxByPubkey(electionPubkey)
+
+				bTxIn := blockchain.NewBallotTxInput(
+					electionPubkey,
+					txElectionOut.Output.ElectionTx.Candidates[0],
+					txElectionOut.ID,
+					txBallotOut.ID,
+					nil,
+					nil,
+					time.Now().Unix(),
+				)
+
+				bTx, _ = blockchain.NewTransaction(
+					blockchain.BALLOT_TX_TYPE,
+					electionPubkey,
+					*bTxIn,
+					blockchain.TxOutput{},
+					utxo,
+				)
+
+				// Sign message
+				signature, err := ringsig.Sign(
+					&sysWallet.Main.PrivateKey,
+					keyring,
+					bTxIn.BallotTx.ToByte(),
+				)
+				if err != nil {
+					log.Panic(err)
+				}
+
+				bTx.Input.BallotTx.Signature = signature.ToByte()
+				bTx.Input.BallotTx.PubKeys = keyRingByte
+
+				block, err := bc.AddBlock([]*blockchain.Transaction{bTx})
+
+				if err != nil {
+					logger.Error("Add Block Error:", err)
+				}
+				fmt.Println("Block added  sucessfully: \n", block)
+
+			}
+		},
+	}
+
+	electionCommand.Flags().BoolVar(&start, "start", false, "Start Election")
+	electionCommand.Flags().BoolVar(&stop, "stop", false, "Stop Election")
+
+	accreditationCommand.Flags().BoolVar(&start, "start", false, "Start Accreditation")
+	accreditationCommand.Flags().BoolVar(&stop, "stop", false, "Stop Accreditation")
+
+	votingCommand.Flags().BoolVar(&start, "start", false, "Start Voting")
+	votingCommand.Flags().BoolVar(&stop, "stop", false, "Stop Voting")
+
+	ballotCommand.Flags().BoolVar(&getBallot, "get", false, "Get ballot")
+	ballotCommand.Flags().BoolVar(&castBallot, "cast", false, "Cast Ballot")
 
 	return []*cobra.Command{
 		mainCommand,
 		printCommand,
 		computeUtxoCommand,
 		resetCommand,
-		newElectionCommand,
+		electionCommand,
+		accreditationCommand,
+		votingCommand,
+		ballotCommand,
+		queryResultCommand,
+		ballotCommand,
 	}
 }

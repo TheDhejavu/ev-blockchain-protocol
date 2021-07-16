@@ -14,54 +14,54 @@ import (
 
 // Vote TxTxOutput
 type TxBallotOutput struct {
-	ID              string
-	TxID            []byte
-	Signers         [][]byte // SIGNATURE BY CONSENSUS GROUP
-	SigWitnesses    [][]byte
-	SecretMessage   []byte // Signed with Public view key (Decrypted with private view key) 🔑
-	PubKeys         [][]byte
-	ElectionKeyHash []byte
-	Timestamp       int64
+	ID             string
+	TxID           []byte
+	Signers        [][]byte // SIGNATURE BY CONSENSUS GROUP
+	SigWitnesses   [][]byte
+	SecretMessage  []byte // Signed with Public view key (Decrypted with private view key) 🔑
+	PubKeys        [][]byte
+	ElectionPubKey []byte
+	Timestamp      int64
 }
 
 // Vote TxInput
 type TxBallotInput struct {
-	TxID            []byte
-	Signature       []byte
-	PubKeys         [][]byte
-	TxOut           []byte
-	Candidate       []byte
-	ElectionKeyHash []byte
-	Timestamp       int64
+	TxID           []byte
+	Signature      []byte
+	PubKeys        [][]byte
+	TxOut          []byte
+	Candidate      []byte
+	ElectionPubKey []byte
+	Timestamp      int64
 }
 
 // NewTxBallotInput CASTS Vote using secret ballot
-func NewBallotTxInput(keyHash, candidate, txId []byte, txOut []byte, signature []byte, pubKeys [][]byte, timestamp int64) *TxInput {
+func NewBallotTxInput(pubKey, candidate, txId []byte, txOut []byte, signature []byte, pubKeys [][]byte, timestamp int64) *TxInput {
 	tx := &TxInput{
 		BallotTx: TxBallotInput{
-			TxID:            txId,
-			Signature:       signature,
-			PubKeys:         pubKeys,
-			TxOut:           txOut,
-			Candidate:       candidate,
-			ElectionKeyHash: keyHash,
-			Timestamp:       timestamp,
+			TxID:           txId,
+			Signature:      signature,
+			PubKeys:        pubKeys,
+			TxOut:          txOut,
+			Candidate:      candidate,
+			ElectionPubKey: pubKey,
+			Timestamp:      timestamp,
 		},
 	}
 	return tx
 }
 
 // NewTxBallotOutput generates secret Ballot
-func NewBallotTxOutput(keyHash, message, txId []byte, pubKeys, signers, SigWitnesses [][]byte, timestamp int64) *TxOutput {
+func NewBallotTxOutput(pubKey, message, txId []byte, pubKeys, signers, SigWitnesses [][]byte, timestamp int64) *TxOutput {
 	tx := &TxOutput{
 		BallotTx: TxBallotOutput{
-			TxID:            txId,
-			Signers:         signers,
-			SigWitnesses:    SigWitnesses,
-			PubKeys:         pubKeys,
-			SecretMessage:   message,
-			ElectionKeyHash: keyHash,
-			Timestamp:       timestamp,
+			TxID:           txId,
+			Signers:        signers,
+			SigWitnesses:   SigWitnesses,
+			PubKeys:        pubKeys,
+			SecretMessage:  message,
+			ElectionPubKey: pubKey,
+			Timestamp:      timestamp,
 		},
 	}
 	uuid, _ := uuid.NewUUID()
@@ -69,8 +69,8 @@ func NewBallotTxOutput(keyHash, message, txId []byte, pubKeys, signers, SigWitne
 	return tx
 }
 
-func (TxOut *TxBallotOutput) IsLockWithKey(ElectionKeyHash []byte) bool {
-	return bytes.Compare(TxOut.ElectionKeyHash, ElectionKeyHash) == 0
+func (TxOut *TxBallotOutput) IsLockWithKey(ElectionPubKey []byte) bool {
+	return bytes.Compare(TxOut.ElectionPubKey, ElectionPubKey) == 0
 }
 
 func (tx *TxBallotOutput) IsSet() bool {
@@ -86,7 +86,7 @@ func (tx *TxBallotOutput) TrimmedCopy() TxBallotOutput {
 		nil,
 		tx.SecretMessage,
 		nil,
-		tx.ElectionKeyHash,
+		tx.ElectionPubKey,
 		tx.Timestamp,
 	}
 	return txCopy
@@ -110,7 +110,7 @@ func (tx *TxBallotInput) TrimmedCopy() TxBallotInput {
 		nil,
 		tx.TxOut,
 		tx.Candidate,
-		tx.ElectionKeyHash,
+		tx.ElectionPubKey,
 		tx.Timestamp,
 	}
 	return txCopy
@@ -140,7 +140,7 @@ func (tx *TxBallotInput) String() string {
 		lines = append(lines, fmt.Sprintf("Timestamp: %d", tx.Timestamp))
 		lines = append(lines, fmt.Sprintf("Candidate: %x", tx.Candidate))
 		lines = append(lines, fmt.Sprintf("Signature: %x", tx.Signature))
-		lines = append(lines, fmt.Sprintf("(Election Keyhash): %x", tx.ElectionKeyHash))
+		lines = append(lines, fmt.Sprintf("(Election pubKey): %x", tx.ElectionPubKey))
 	}
 	return strings.Join(lines, "\n")
 }
@@ -160,7 +160,7 @@ func (tx *TxBallotOutput) String() string {
 			lines = append(lines, fmt.Sprintf("(Signature Witness): \n --(%d): %x", i, tx.SigWitnesses[i]))
 		}
 		lines = append(lines, fmt.Sprintf("(Secret Message): %x", tx.SecretMessage))
-		lines = append(lines, fmt.Sprintf("(Election Keyhash): %s", tx.ElectionKeyHash))
+		lines = append(lines, fmt.Sprintf("(Election pubKey): %s", tx.ElectionPubKey))
 	}
 	return strings.Join(lines, "\n")
 }

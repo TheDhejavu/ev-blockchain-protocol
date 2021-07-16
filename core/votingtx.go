@@ -13,48 +13,48 @@ import (
 // INITIALIZE VOTE
 // Start Vote TxTxOutput
 type TxVotingOutput struct {
-	ID              string
-	TxID            []byte
-	Signers         [][]byte
-	SigWitnesses    [][]byte
-	ElectionKeyHash []byte
-	Timestamp       int64
+	ID             string
+	TxID           []byte
+	Signers        [][]byte
+	SigWitnesses   [][]byte
+	ElectionPubKey []byte
+	Timestamp      int64
 }
 
 // End Vote TxInput
 type TxVotingInput struct {
-	TxID            []byte
-	Signers         [][]byte // TransVotingtion Signatures from signers
-	SigWitnesses    [][]byte
-	ElectionKeyHash []byte
-	TxOut           []byte
-	Timestamp       int64
+	TxID           []byte
+	Signers        [][]byte // TransVotingtion Signatures from signers
+	SigWitnesses   [][]byte
+	ElectionPubKey []byte
+	TxOut          []byte
+	Timestamp      int64
 }
 
 // NewTxVotingInput  ENDS Voting Phase
-func NewVotingTxInput(keyHash, txId []byte, txOut []byte, signers, SigWitnesses [][]byte, timestamp int64) *TxInput {
+func NewVotingTxInput(pubKey, txId []byte, txOut []byte, signers, SigWitnesses [][]byte, timestamp int64) *TxInput {
 	tx := &TxInput{
 		VotingTx: TxVotingInput{
-			TxID:            txId,
-			Signers:         signers,
-			SigWitnesses:    SigWitnesses,
-			TxOut:           txOut,
-			ElectionKeyHash: keyHash,
-			Timestamp:       timestamp,
+			TxID:           txId,
+			Signers:        signers,
+			SigWitnesses:   SigWitnesses,
+			TxOut:          txOut,
+			ElectionPubKey: pubKey,
+			Timestamp:      timestamp,
 		},
 	}
 	return tx
 }
 
 // NewTxVotingOutput BEGINS Voting Phase
-func NewVotingTxOutput(keyHash []byte, txId []byte, signers, SigWitnesses [][]byte, timestamp int64) *TxOutput {
+func NewVotingTxOutput(pubKey []byte, txId []byte, signers, SigWitnesses [][]byte, timestamp int64) *TxOutput {
 	tx := &TxOutput{
 		VotingTx: TxVotingOutput{
-			TxID:            txId,
-			Signers:         signers,
-			SigWitnesses:    SigWitnesses,
-			ElectionKeyHash: keyHash,
-			Timestamp:       timestamp,
+			TxID:           txId,
+			Signers:        signers,
+			SigWitnesses:   SigWitnesses,
+			ElectionPubKey: pubKey,
+			Timestamp:      timestamp,
 		},
 	}
 	uuid, _ := uuid.NewUUID()
@@ -62,8 +62,8 @@ func NewVotingTxOutput(keyHash []byte, txId []byte, signers, SigWitnesses [][]by
 	return tx
 }
 
-func (TxOut *TxVotingOutput) IsLockWithKey(ElectionKeyHash []byte) bool {
-	return bytes.Compare(TxOut.ElectionKeyHash, ElectionKeyHash) == 0
+func (TxOut *TxVotingOutput) IsLockWithKey(ElectionPubKey []byte) bool {
+	return bytes.Compare(TxOut.ElectionPubKey, ElectionPubKey) == 0
 }
 
 func (tx *TxVotingOutput) IsSet() bool {
@@ -77,7 +77,7 @@ func (tx *TxVotingOutput) TrimmedCopy() TxVotingOutput {
 		tx.TxID,
 		nil,
 		nil,
-		tx.ElectionKeyHash,
+		tx.ElectionPubKey,
 		tx.Timestamp,
 	}
 	return txCopy
@@ -99,7 +99,7 @@ func (tx *TxVotingInput) TrimmedCopy() TxVotingInput {
 		tx.TxID,
 		nil,
 		nil,
-		tx.ElectionKeyHash,
+		tx.ElectionPubKey,
 		tx.TxOut,
 		tx.Timestamp,
 	}
@@ -133,7 +133,7 @@ func (tx *TxVotingInput) String() string {
 		for i := 0; i < len(tx.SigWitnesses); i++ {
 			lines = append(lines, fmt.Sprintf("(Signature Witness): \n --(%d): %x", i, tx.SigWitnesses[i]))
 		}
-		lines = append(lines, fmt.Sprintf("Election Keyhash: %x", tx.ElectionKeyHash))
+		lines = append(lines, fmt.Sprintf("Election pubKey: %x", tx.ElectionPubKey))
 	}
 	return strings.Join(lines, "\n")
 }
@@ -151,7 +151,7 @@ func (tx *TxVotingOutput) String() string {
 		for i := 0; i < len(tx.SigWitnesses); i++ {
 			lines = append(lines, fmt.Sprintf("(Signature Witness): \n --(%d): %x", i, tx.SigWitnesses[i]))
 		}
-		lines = append(lines, fmt.Sprintf("Election Keyhash: %x", tx.ElectionKeyHash))
+		lines = append(lines, fmt.Sprintf("Election pubKey: %x", tx.ElectionPubKey))
 	}
 	return strings.Join(lines, "\n")
 }

@@ -12,12 +12,12 @@ import (
 // ACCREDITATION
 // Start Vote Accreditation TxTxOutput
 type TxAcOutput struct {
-	ID              string
-	TxID            []byte
-	Signers         [][]byte
-	SigWitnesses    [][]byte
-	ElectionKeyHash []byte
-	Timestamp       int64
+	ID             string
+	TxID           []byte
+	Signers        [][]byte
+	SigWitnesses   [][]byte
+	ElectionPubKey []byte
+	Timestamp      int64
 }
 
 // End Vote Accreditation TxInput
@@ -26,7 +26,7 @@ type TxAcInput struct {
 	Signers         [][]byte
 	SigWitnesses    [][]byte
 	TxOut           []byte
-	ElectionKeyHash []byte
+	ElectionPubKey  []byte
 	AccreditedCount int64
 	Timestamp       int64
 }
@@ -40,7 +40,7 @@ func NewAccreditationTxInput(keyHash, txId []byte, txOut []byte, signers, SigWit
 			SigWitnesses:    SigWitnesses,
 			TxOut:           txOut,
 			AccreditedCount: count,
-			ElectionKeyHash: keyHash,
+			ElectionPubKey:  keyHash,
 			Timestamp:       timestamp,
 		},
 	}
@@ -51,11 +51,11 @@ func NewAccreditationTxInput(keyHash, txId []byte, txOut []byte, signers, SigWit
 func NewAccreditationTxOutput(keyHash []byte, txId []byte, signers, SigWitnesses [][]byte, timestamp int64) *TxOutput {
 	tx := &TxOutput{
 		AccreditationTx: TxAcOutput{
-			TxID:            txId,
-			Signers:         signers,
-			SigWitnesses:    SigWitnesses,
-			ElectionKeyHash: keyHash,
-			Timestamp:       timestamp,
+			TxID:           txId,
+			Signers:        signers,
+			SigWitnesses:   SigWitnesses,
+			ElectionPubKey: keyHash,
+			Timestamp:      timestamp,
 		},
 	}
 	uuid, _ := uuid.NewUUID()
@@ -73,7 +73,7 @@ func (tx *TxAcOutput) TrimmedCopy() TxAcOutput {
 		tx.TxID,
 		nil,
 		nil,
-		tx.ElectionKeyHash,
+		tx.ElectionPubKey,
 		tx.Timestamp,
 	}
 	return txCopy
@@ -96,7 +96,7 @@ func (tx *TxAcInput) TrimmedCopy() TxAcInput {
 		nil,
 		nil,
 		tx.TxOut,
-		tx.ElectionKeyHash,
+		tx.ElectionPubKey,
 		tx.AccreditedCount,
 		tx.Timestamp,
 	}
@@ -132,7 +132,7 @@ func (tx *TxAcInput) String() string {
 			lines = append(lines, fmt.Sprintf("(Signature Witness): \n --(%d): %x", i, tx.SigWitnesses[i]))
 		}
 		lines = append(lines, fmt.Sprintf("TxOut: %s", tx.TxOut))
-		lines = append(lines, fmt.Sprintf("Election Keyhash: %x", tx.ElectionKeyHash))
+		lines = append(lines, fmt.Sprintf("Election Keyhash: %x", tx.ElectionPubKey))
 	}
 
 	return strings.Join(lines, "\n")
@@ -151,7 +151,7 @@ func (tx *TxAcOutput) String() string {
 		for i := 0; i < len(tx.SigWitnesses); i++ {
 			lines = append(lines, fmt.Sprintf("(Signature Witness): \n --(%d): %x", i, tx.SigWitnesses[i]))
 		}
-		lines = append(lines, fmt.Sprintf("Election Keyhash: %x", tx.ElectionKeyHash))
+		lines = append(lines, fmt.Sprintf("Election Keyhash: %x", tx.ElectionPubKey))
 	}
 	return strings.Join(lines, "\n")
 }

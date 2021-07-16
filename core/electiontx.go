@@ -12,32 +12,32 @@ import (
 // INITIALIZE ELECTION
 // Init  election TxOutput
 type TxElectionOutput struct {
-	ID              string
-	Signers         [][]byte
-	SigWitnesses    [][]byte
-	ElectionKeyHash []byte
-	Title           string
-	Description     string
-	TotalPeople     int64
-	Candidates      [][]byte
+	ID             string
+	Signers        [][]byte
+	SigWitnesses   [][]byte
+	ElectionPubKey []byte
+	Title          string
+	Description    string
+	TotalPeople    int64
+	Candidates     [][]byte
 }
 
 // End Election TxInput
 type TxElectionInput struct {
-	Signers         [][]byte
-	SigWitnesses    [][]byte
-	TxOut           []byte
-	ElectionKeyHash []byte
+	Signers        [][]byte
+	SigWitnesses   [][]byte
+	TxOut          []byte
+	ElectionPubKey []byte
 }
 
 // NewTxAccreditationInput Stops Accreditation  Phase
 func NewElectionTxInput(keyHash, txOut []byte, signers, SigWitnesses [][]byte) *TxInput {
 	tx := &TxInput{
 		ElectionTx: TxElectionInput{
-			Signers:         signers,
-			SigWitnesses:    SigWitnesses,
-			ElectionKeyHash: keyHash,
-			TxOut:           txOut,
+			Signers:        signers,
+			SigWitnesses:   SigWitnesses,
+			ElectionPubKey: keyHash,
+			TxOut:          txOut,
 		},
 	}
 	return tx
@@ -47,13 +47,13 @@ func NewElectionTxInput(keyHash, txOut []byte, signers, SigWitnesses [][]byte) *
 func NewElectionTxOutput(title, desp string, keyHash []byte, signers, SigWitnesses, candidates [][]byte, totalPeople int64) *TxOutput {
 	tx := &TxOutput{
 		ElectionTx: TxElectionOutput{
-			Signers:         signers,
-			SigWitnesses:    SigWitnesses,
-			ElectionKeyHash: keyHash,
-			Title:           title,
-			Description:     desp,
-			TotalPeople:     totalPeople,
-			Candidates:      candidates,
+			Signers:        signers,
+			SigWitnesses:   SigWitnesses,
+			ElectionPubKey: keyHash,
+			Title:          title,
+			Description:    desp,
+			TotalPeople:    totalPeople,
+			Candidates:     candidates,
 		},
 	}
 	uuid, _ := uuid.NewUUID()
@@ -67,7 +67,7 @@ func (tx TxElectionOutput) TrimmedCopy() *TxElectionOutput {
 		"",
 		nil,
 		nil,
-		tx.ElectionKeyHash,
+		tx.ElectionPubKey,
 		tx.Title,
 		tx.Description,
 		tx.TotalPeople,
@@ -96,7 +96,7 @@ func (tx *TxElectionInput) TrimmedCopy() *TxElectionInput {
 		nil,
 		nil,
 		tx.TxOut,
-		tx.ElectionKeyHash,
+		tx.ElectionPubKey,
 	}
 	return txCopy
 }
@@ -128,7 +128,7 @@ func (tx *TxElectionInput) String() string {
 		for i := 0; i < len(tx.SigWitnesses); i++ {
 			lines = append(lines, fmt.Sprintf("		--(%d): %x", i, tx.SigWitnesses[i]))
 		}
-		lines = append(lines, fmt.Sprintf("	Election Keyhash: %s", tx.ElectionKeyHash))
+		lines = append(lines, fmt.Sprintf("	Election Keyhash: %s", tx.ElectionPubKey))
 	}
 
 	return strings.Join(lines, "\n")
@@ -151,7 +151,7 @@ func (tx *TxElectionOutput) String() string {
 		}
 		lines = append(lines, fmt.Sprintf("	Description: %s", tx.Description))
 		lines = append(lines, fmt.Sprintf("	People: %d", tx.TotalPeople))
-		lines = append(lines, fmt.Sprintf("	Election Keyhash: %s", tx.ElectionKeyHash))
+		lines = append(lines, fmt.Sprintf("	Election Keyhash: %s", tx.ElectionPubKey))
 	}
 	return strings.Join(lines, "\n")
 }

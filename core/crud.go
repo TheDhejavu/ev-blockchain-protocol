@@ -10,8 +10,7 @@ import (
 )
 
 var (
-	ErrAlreadyExists      = errors.New("transaction already exists")
-	ErrInvalidTransaction = errors.New("No transaction with id")
+	ErrAlreadyExists = errors.New("transaction already exists")
 )
 
 type (
@@ -46,13 +45,11 @@ func (crud *Crud) StoreBlock(block *Block) (*Block, error) {
 	if err == nil {
 		return block, err
 	}
-
 	blockData := block.Serialize()
 	err = crud.Save(block.Hash, blockData)
 	if err == nil {
 		return block, err
 	}
-
 	err = crud.Save(lastHashKey, block.Hash)
 	if err == nil {
 		logger.Error("Error: Unable to update lastblock Hash")
@@ -158,7 +155,7 @@ func (crud *Crud) FindTransaction(ID []byte) (Transaction, error) {
 	return Transaction{}, ErrInvalidTransaction
 }
 
-func (crud *Crud) FindTransactionByKeyHash(keyHash []byte) (Transaction, error) {
+func (crud *Crud) FindTxByElectionPubkey(keyHash []byte) (Transaction, error) {
 	iter, err := crud.Iterator()
 	if err != nil {
 		return Transaction{}, err
@@ -167,7 +164,7 @@ func (crud *Crud) FindTransactionByKeyHash(keyHash []byte) (Transaction, error) 
 		block := iter.Next()
 
 		for _, tx := range block.Transactions {
-			if bytes.Compare(tx.KeyHash, keyHash) == 0 {
+			if bytes.Compare(tx.ElectionPubkey, keyHash) == 0 {
 				return *tx, nil
 			}
 		}
@@ -176,29 +173,24 @@ func (crud *Crud) FindTransactionByKeyHash(keyHash []byte) (Transaction, error) 
 		}
 	}
 	logger.Error("Error: No Transaction with ID")
-
 	return Transaction{}, ErrInvalidTransaction
 }
 
 func (crud *Crud) Iterator() (*Iterator, error) {
 	lastHash, err := crud.GetLastHash()
-
 	if err != nil {
 		return nil, err
 	}
-
 	return &Iterator{crud.ps, lastHash}, nil
 }
 
 func (iter *Iterator) Next() *Block {
 	var block *Block
-
 	blockData, err := iter.ps.Get(iter.currentHash)
 	if err != nil {
 		logger.Panic(err)
 	}
 	block = DeSerialize(blockData)
-
 	iter.currentHash = block.PrevHash
 	return block
 }

@@ -6,6 +6,8 @@ import (
 	"crypto/elliptic"
 	"crypto/sha256"
 	"encoding/gob"
+	"encoding/hex"
+	"errors"
 	"fmt"
 	"math/big"
 	"math/rand"
@@ -31,30 +33,35 @@ var (
 		BALLOT_TX_TYPE,
 		ELECTION_TX_TYPE,
 	}
+	ErrInvalidTransaction = errors.New("Invalid transaction input")
 )
 
 type Transaction struct {
-	ID      []byte
-	Input   TxInput
-	Output  TxOutput
-	Nonce   uint64
-	Type    string
-	KeyHash []byte
+	ID             []byte
+	Input          TxInput
+	Output         TxOutput
+	Nonce          uint64
+	Type           string
+	ElectionPubkey []byte
 }
 
 // Create new Transaction
-func NewTransaction(txType string, keyHash []byte, input TxInput, output TxOutput, utxo *UnusedXTOSet) (*Transaction, error) {
+func NewTransaction(txType string, electionPubkey []byte, input TxInput, output TxOutput, utxo *UnusedXTOSet) (*Transaction, error) {
 	rand.Seed(time.Now().Unix())
-	
+
 	tx := Transaction{
-		ID:      nil,
-		Input:   input,
-		Output:  output,
-		Nonce:   rand.Uint64(),
-		Type:    txType,
-		KeyHash: keyHash,
+		ID:             nil,
+		Input:          input,
+		Output:         output,
+		Nonce:          rand.Uint64(),
+		Type:           txType,
+		ElectionPubkey: electionPubkey,
 	}
 	tx.ID = tx.Hash()
+	if !tx.Valid(*utxo) {
+		logger.Fatal("Error:", ErrInvalidTransaction)
+		return &tx, ErrInvalidTransaction
+	}
 	return &tx, nil
 }
 
@@ -132,7 +139,7 @@ func (tx *Transaction) verifyAccreditationTx(prevTx Transaction) bool {
 		}
 
 		txCopy := tx.Input.AccreditationTx.TrimmedCopy()
-		txCopy.ElectionKeyHash = prevTx.KeyHash
+		txCopy.ElectionPubKey = prevTx.ElectionPubkey
 		// Verify data
 		verified, err := ms.Verify(txCopy.ToByte())
 		if err != nil {
@@ -154,7 +161,7 @@ func (tx *Transaction) verifyVotingTx(prevTx Transaction) bool {
 			Sigs:    votingOut.SigWitnesses,
 		}
 		// txCopy := votingOut.TrimmedCopy()
-		// txCopy.ElectionKeyHash = []byte("sm")
+		// txCopy.ElectionPubKey = []byte("sm")
 		verified, err := ms.Verify(votingOut.ToByte())
 		if err != nil {
 			logger.Error(err)
@@ -174,7 +181,7 @@ func (tx *Transaction) verifyVotingTx(prevTx Transaction) bool {
 		}
 
 		txCopy := tx.Input.VotingTx.TrimmedCopy()
-		txCopy.ElectionKeyHash = prevTx.Output.VotingTx.ElectionKeyHash
+		txCopy.ElectionPubKey = prevTx.Output.VotingTx.ElectionPubKey
 		// Verify data
 		verified, err := ms.Verify(txCopy.ToByte())
 		if err != nil {
@@ -224,7 +231,7 @@ func (tx *Transaction) verifyBallotTx(prevTx Transaction) bool {
 		signature := new(ringsig.RingSign)
 		signature.FromByte(ballotIn.Signature)
 		txCopy := ballotIn.TrimmedCopy()
-		txCopy.ElectionKeyHash = prevTx.Output.BallotTx.ElectionKeyHash
+		txCopy.ElectionPubKey = prevTx.Output.BallotTx.ElectionPubKey
 		txCopy.PubKeys = prevTx.Output.BallotTx.PubKeys
 
 		verified := ringsig.Verify(keyring, txCopy.ToByte(), signature)
@@ -310,4 +317,50 @@ func (tx *Transaction) String() string {
 	}
 
 	return strings.Join(lines, "\n")
+}
+
+func (tx *Transaction) Valid(utxo UnusedXTOSet) bool {
+	var validInput = false
+
+	if reflect.DeepEqual(tx.Input, TxInput{}) == false {
+
+		switch tx.Type {
+		case ELECTION_TX_TYPE:
+			validoutputs := utxo.FindUnUsedElectionTxOuputs(tx.ElectionPubkey)
+			for k := range validoutputs {
+				if k == hex.EncodeToString(tx.Input.ElectionTx.TxOut) {
+					validInput = true
+				}
+			}
+		case ACCREDITATION_TX_TYPE:
+			validoutputs := utxo.FindUnUsedAccreditationTxOuputs(tx.ElectionPubkey)
+
+			for k := range validoutputs {
+				if k == hex.EncodeToString(tx.Input.AccreditationTx.TxOut) {
+					validInput = true
+				}
+			}
+		case VOTING_TX_TYPE:
+			validoutputs := utxo.FindUnUsedVotingTxOuputs(tx.ElectionPubkey)
+			for k := range validoutputs {
+				if k == hex.EncodeToString(tx.Input.VotingTx.TxOut) {
+					validInput = true
+				}
+			}
+		case BALLOT_TX_TYPE:
+			validoutputs := utxo.FindUnUsedBallotTxOuputs(tx.ElectionPubkey)
+
+			for k := range validoutputs {
+				if k == hex.EncodeToString(tx.Input.BallotTx.TxOut) {
+					validInput = true
+				}
+			}
+		}
+
+	}
+	if reflect.DeepEqual(tx.Output, TxOutput{}) == false {
+		return true
+	}
+
+	return validInput
 }

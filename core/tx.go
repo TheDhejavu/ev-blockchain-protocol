@@ -47,18 +47,18 @@ func DeSerializeOutputs(data []byte) TxOutputs {
 	return TxOutputs
 }
 
-func (out *TxOutput) IsLockWithKeyHash(pubKeyHash []byte) bool {
+func (out *TxOutput) IsLockWithKeyHash(pubKey []byte) bool {
 	if out.ElectionTx.IsSet() {
-		return bytes.Compare(out.ElectionTx.ElectionKeyHash, pubKeyHash) == 0
+		return bytes.Compare(out.ElectionTx.ElectionPubKey, pubKey) == 0
 	}
 	if out.VotingTx.IsSet() {
-		return bytes.Compare(out.VotingTx.ElectionKeyHash, pubKeyHash) == 0
+		return bytes.Compare(out.VotingTx.ElectionPubKey, pubKey) == 0
 	}
 	if out.BallotTx.IsSet() {
-		return bytes.Compare(out.BallotTx.ElectionKeyHash, pubKeyHash) == 0
+		return bytes.Compare(out.BallotTx.ElectionPubKey, pubKey) == 0
 	}
 	if out.AccreditationTx.IsSet() {
-		return bytes.Compare(out.AccreditationTx.ElectionKeyHash, pubKeyHash) == 0
+		return bytes.Compare(out.AccreditationTx.ElectionPubKey, pubKey) == 0
 	}
 
 	return false
