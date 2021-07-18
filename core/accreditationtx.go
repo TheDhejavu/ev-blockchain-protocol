@@ -12,23 +12,23 @@ import (
 // ACCREDITATION
 // Start Vote Accreditation TxTxOutput
 type TxAcOutput struct {
-	ID             string
-	TxID           []byte
-	Signers        [][]byte
-	SigWitnesses   [][]byte
-	ElectionPubKey []byte
-	Timestamp      int64
+	ID             string   `json:"id"`
+	TxID           []byte   `json:"tx_id"`
+	Signers        [][]byte `json:"signers"`
+	SigWitnesses   [][]byte `json:"sig_witnesses"`
+	ElectionPubKey []byte   `json:"election_pubkey"`
+	Timestamp      int64    `json:"timestamp"`
 }
 
 // End Vote Accreditation TxInput
 type TxAcInput struct {
-	TxID            []byte
-	Signers         [][]byte
-	SigWitnesses    [][]byte
-	TxOut           []byte
-	ElectionPubKey  []byte
-	AccreditedCount int64
-	Timestamp       int64
+	TxID            []byte   `json:"tx_id"`
+	Signers         [][]byte `json:"signers"`
+	SigWitnesses    [][]byte `json:"sig_witnesses"`
+	TxOut           []byte   `json:"tx_out"`
+	ElectionPubKey  []byte   `json:"election_pubkey"`
+	AccreditedCount int64    `json:"accreditation_count"`
+	Timestamp       int64    `json:"timestamp"`
 }
 
 // NewTxAccreditationInput Stops Accreditation  Phase

@@ -8,21 +8,21 @@ import (
 )
 
 type TxInput struct {
-	ElectionTx      TxElectionInput
-	AccreditationTx TxAcInput
-	VotingTx        TxVotingInput
-	BallotTx        TxBallotInput
+	ElectionTx      TxElectionInput `json:"election_tx,omitempty"`
+	AccreditationTx TxAcInput       `json:"accreditation_tx,omitempty"`
+	VotingTx        TxVotingInput   `json:"voting_tx,omitempty"`
+	BallotTx        TxBallotInput   `json:"ballot_tx,omitempty"`
 }
 
 type TxOutput struct {
-	ElectionTx      TxElectionOutput
-	AccreditationTx TxAcOutput
-	VotingTx        TxVotingOutput
-	BallotTx        TxBallotOutput
+	ElectionTx      TxElectionOutput `json:"election_tx,omitempty"`
+	AccreditationTx TxAcOutput       `json:"accreditation_tx,omitempty"`
+	VotingTx        TxVotingOutput   `json:"voting_tx,omitempty"`
+	BallotTx        TxBallotOutput   `json:"ballot_tx,omitempty"`
 }
 
 type TxOutputs struct {
-	Outputs []TxOutput
+	Outputs []TxOutput `json:"outputs"`
 }
 
 func (TxOutput *TxOutputs) Serialize() []byte {

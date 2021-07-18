@@ -127,10 +127,6 @@ func NewCommands() []*cobra.Command {
 					candidates = append(candidates, w.Main.PublicKey)
 				}
 
-				_, err := bc.GetTransactionByPubkey(electionPubkey)
-				if err == nil {
-					logger.Fatal("Election publickey already exist")
-				}
 				txOut := blockchain.NewElectionTxOutput(
 					"Presidential Election",
 					"President",
@@ -169,7 +165,6 @@ func NewCommands() []*cobra.Command {
 					electionPubkey,
 					blockchain.TxInput{},
 					*txOut,
-					&blockchain.UnusedXTOSet{},
 				)
 
 				eTx.Output.ElectionTx.SigWitnesses = SigWitnesses
@@ -184,10 +179,8 @@ func NewCommands() []*cobra.Command {
 			}
 
 			if stop {
-				utxo := blockchain.NewUnusedXTOSet(bc)
-
 				var electionTx *blockchain.Transaction
-				txOut, _ := bc.GetElectionTxByPubkey(electionPubkey)
+				txOut, _ := bc.FindTxWithElectionOutByPubkey(electionPubkey)
 				txIn := blockchain.NewElectionTxInput(
 					electionPubkey,
 					txOut.ID,
@@ -216,7 +209,6 @@ func NewCommands() []*cobra.Command {
 					electionPubkey,
 					*txIn,
 					blockchain.TxOutput{},
-					utxo,
 				)
 
 				electionTx.Input.ElectionTx.SigWitnesses = mu.Sigs
@@ -241,7 +233,7 @@ func NewCommands() []*cobra.Command {
 			if start {
 				var eaTx *blockchain.Transaction
 
-				txOut, _ := bc.GetElectionTxByPubkey(electionPubkey)
+				txOut, _ := bc.FindTxWithElectionOutByPubkey(electionPubkey)
 				if txOut.ID == nil {
 					logger.Fatal("Error: No correspoding election TxOut")
 				}
@@ -274,7 +266,6 @@ func NewCommands() []*cobra.Command {
 					electionPubkey,
 					blockchain.TxInput{},
 					*txAccreditationOut,
-					&blockchain.UnusedXTOSet{},
 				)
 
 				eaTx.Output.AccreditationTx.SigWitnesses = mu.Sigs
@@ -289,11 +280,9 @@ func NewCommands() []*cobra.Command {
 			}
 
 			if stop {
-				utxo := blockchain.NewUnusedXTOSet(bc)
-
 				var acTx *blockchain.Transaction
-				txElectionOut, _ := bc.GetElectionTxByPubkey(electionPubkey)
-				txAcOut, _ := bc.GetAcTxByPubkey(electionPubkey)
+				txElectionOut, _ := bc.FindTxWithElectionOutByPubkey(electionPubkey)
+				txAcOut, _ := bc.FindTxWithAcOutByPubkey(electionPubkey)
 				fmt.Printf("%x", txAcOut.ID)
 				// return
 				txAcIn := blockchain.NewAccreditationTxInput(
@@ -327,7 +316,6 @@ func NewCommands() []*cobra.Command {
 					electionPubkey,
 					*txAcIn,
 					blockchain.TxOutput{},
-					utxo,
 				)
 
 				acTx.Input.AccreditationTx.SigWitnesses = mu.Sigs
@@ -354,7 +342,7 @@ func NewCommands() []*cobra.Command {
 			if start {
 				var vtTx *blockchain.Transaction
 
-				txOut, _ := bc.GetElectionTxByPubkey(electionPubkey)
+				txOut, _ := bc.FindTxWithElectionOutByPubkey(electionPubkey)
 				if txOut.ID == nil {
 					logger.Fatal("Error: No correspoding election TxOut")
 				}
@@ -387,7 +375,6 @@ func NewCommands() []*cobra.Command {
 					electionPubkey,
 					blockchain.TxInput{},
 					*txVotingOut,
-					&blockchain.UnusedXTOSet{},
 				)
 
 				vtTx.Output.VotingTx.SigWitnesses = mu.Sigs
@@ -402,11 +389,9 @@ func NewCommands() []*cobra.Command {
 			}
 
 			if stop {
-				utxo := blockchain.NewUnusedXTOSet(bc)
-
 				var vTx *blockchain.Transaction
-				txElectionOut, _ := bc.GetElectionTxByPubkey(electionPubkey)
-				txVotingOut, _ := bc.GetVotingTxByPubkey(electionPubkey)
+				txElectionOut, _ := bc.FindTxWithElectionOutByPubkey(electionPubkey)
+				txVotingOut, _ := bc.FindTxWithVotingOutByPubkey(electionPubkey)
 				fmt.Printf("%x", txVotingOut.ID)
 				// return
 				txVotingIn := blockchain.NewVotingTxInput(
@@ -439,7 +424,6 @@ func NewCommands() []*cobra.Command {
 					electionPubkey,
 					*txVotingIn,
 					blockchain.TxOutput{},
-					utxo,
 				)
 
 				vTx.Input.VotingTx.SigWitnesses = mu.Sigs
@@ -468,7 +452,7 @@ func NewCommands() []*cobra.Command {
 				var bTx *blockchain.Transaction
 				secretMessage := []byte("This is my ballot secret message")
 				msg, _ := sysWallet.View.Encrypt(secretMessage)
-				txElectionOut, err := bc.GetElectionTxByPubkey(electionPubkey)
+				txElectionOut, err := bc.FindTxWithElectionOutByPubkey(electionPubkey)
 				if err != nil {
 					logger.Error("Error:", err)
 				}
@@ -505,7 +489,6 @@ func NewCommands() []*cobra.Command {
 					electionPubkey,
 					blockchain.TxInput{},
 					*bTxOut,
-					&blockchain.UnusedXTOSet{},
 				)
 
 				bTx.Output.BallotTx.SigWitnesses = mu.Sigs
@@ -532,9 +515,8 @@ func NewCommands() []*cobra.Command {
 			if castBallot {
 				logger.Info("Cast Ballot!!!!!!!!")
 				var bTx *blockchain.Transaction
-				utxo := blockchain.NewUnusedXTOSet(bc)
 
-				txElectionOut, _ := bc.GetElectionTxByPubkey(electionPubkey)
+				txElectionOut, _ := bc.FindTxWithElectionOutByPubkey(electionPubkey)
 				txBallotOut, _ := bc.GetBallotTxByPubkey(electionPubkey)
 
 				bTxIn := blockchain.NewBallotTxInput(
@@ -552,7 +534,6 @@ func NewCommands() []*cobra.Command {
 					electionPubkey,
 					*bTxIn,
 					blockchain.TxOutput{},
-					utxo,
 				)
 
 				// Sign message

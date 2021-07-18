@@ -3,6 +3,7 @@ package blockchain
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"log"
 
 	logger "github.com/sirupsen/logrus"
@@ -150,12 +151,11 @@ func (crud *Crud) FindTransaction(ID []byte) (Transaction, error) {
 			break
 		}
 	}
-	logger.Error("Error: No Transaction with ID")
 
-	return Transaction{}, ErrInvalidTransaction
+	return Transaction{}, ErrInvalidTransactionID
 }
 
-func (crud *Crud) FindTxByElectionPubkey(keyHash []byte) (Transaction, error) {
+func (crud *Crud) FindTransactionByPubkey(pubKey []byte) (Transaction, error) {
 	iter, err := crud.Iterator()
 	if err != nil {
 		return Transaction{}, err
@@ -164,7 +164,9 @@ func (crud *Crud) FindTxByElectionPubkey(keyHash []byte) (Transaction, error) {
 		block := iter.Next()
 
 		for _, tx := range block.Transactions {
-			if bytes.Compare(tx.ElectionPubkey, keyHash) == 0 {
+			fmt.Println(string(tx.ElectionPubkey))
+			if bytes.Compare(tx.ElectionPubkey, pubKey) == 0 {
+				fmt.Println(tx.ID)
 				return *tx, nil
 			}
 		}
@@ -172,8 +174,8 @@ func (crud *Crud) FindTxByElectionPubkey(keyHash []byte) (Transaction, error) {
 			break
 		}
 	}
-	logger.Error("Error: No Transaction with ID")
-	return Transaction{}, ErrInvalidTransaction
+	// logger.Error("Error: No Transaction with ID")
+	return Transaction{}, ErrInvalidTransactionPubkey
 }
 
 func (crud *Crud) Iterator() (*Iterator, error) {

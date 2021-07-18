@@ -33,20 +33,22 @@ var (
 		BALLOT_TX_TYPE,
 		ELECTION_TX_TYPE,
 	}
-	ErrInvalidTransaction = errors.New("Invalid transaction input")
+	ErrInvalidTransaction       = errors.New("Invalid transaction input")
+	ErrInvalidTransactionID     = errors.New("Invalid transaction ID")
+	ErrInvalidTransactionPubkey = errors.New("Invalid transaction Pubkey")
 )
 
 type Transaction struct {
-	ID             []byte
-	Input          TxInput
-	Output         TxOutput
-	Nonce          uint64
-	Type           string
-	ElectionPubkey []byte
+	ID             []byte   `json:"id"`
+	Input          TxInput  `json:"input,omitempty"`
+	Output         TxOutput `json:"output,omitempty"`
+	Nonce          uint64   `json:"nonce"`
+	Type           string   `json:"type"`
+	ElectionPubkey []byte   `json:"election_pubkey"`
 }
 
 // Create new Transaction
-func NewTransaction(txType string, electionPubkey []byte, input TxInput, output TxOutput, utxo *UnusedXTOSet) (*Transaction, error) {
+func NewTransaction(txType string, electionPubkey []byte, input TxInput, output TxOutput) (*Transaction, error) {
 	rand.Seed(time.Now().Unix())
 
 	tx := Transaction{
@@ -58,10 +60,7 @@ func NewTransaction(txType string, electionPubkey []byte, input TxInput, output 
 		ElectionPubkey: electionPubkey,
 	}
 	tx.ID = tx.Hash()
-	if !tx.Valid(*utxo) {
-		logger.Fatal("Error:", ErrInvalidTransaction)
-		return &tx, ErrInvalidTransaction
-	}
+
 	return &tx, nil
 }
 
@@ -114,13 +113,14 @@ func (tx *Transaction) verifyAccreditationTx(prevTx Transaction) bool {
 	accreditationOut := tx.Output.AccreditationTx
 	accreditationIn := tx.Input.AccreditationTx
 
-	// fmt.Println(accreditationOut.IsSet(), accreditationIn.IsSet())
 	if accreditationOut.IsSet() {
 		ms := multisig.MultiSig{
 			PubKeys: accreditationOut.Signers,
 			Sigs:    accreditationOut.SigWitnesses,
 		}
+
 		verified, err := ms.Verify(accreditationOut.ToByte())
+
 		if err != nil {
 			logger.Error(err)
 		}
@@ -358,6 +358,7 @@ func (tx *Transaction) Valid(utxo UnusedXTOSet) bool {
 		}
 
 	}
+
 	if reflect.DeepEqual(tx.Output, TxOutput{}) == false {
 		return true
 	}

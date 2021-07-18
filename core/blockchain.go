@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
-	"log"
 	"strconv"
 	"sync"
 
@@ -67,18 +66,24 @@ func (bc *Blockchain) ReInit() *Blockchain {
 		logger.Info("Get last blockchain hash")
 		bc.lashHash = lastHash
 	}
-	// Compute
-	// bc.ComputeUnUsedTXOs()
 
 	return bc
 }
 
 func (bc *Blockchain) AddBlock(transactions []*Transaction) (*Block, error) {
 	mutex.Lock()
+	utxos := NewUnusedXTOSet(bc)
 
 	for _, tx := range transactions {
+
+		if tx.Valid(*utxos) != true {
+			logger.Error("Invalid Transaction")
+			return &Block{}, ErrInvalidTransaction
+		}
+
 		if bc.VerifyTx(tx) != true {
-			log.Panic("Invalid Transaction")
+			logger.Error("Invalid Transaction Veriiiiift=y")
+			return &Block{}, ErrInvalidTransaction
 		}
 	}
 	// get block from lasthash
@@ -103,6 +108,8 @@ func (bc *Blockchain) AddBlock(transactions []*Transaction) (*Block, error) {
 		return &Block{}, err
 	}
 	bc.lashHash = block.Hash
+	// Compute
+	bc.ComputeUnUsedTXOs()
 
 	mutex.Unlock()
 	return block, nil
@@ -163,13 +170,13 @@ func (bc *Blockchain) GetBestHeight() int {
 	return lastBlock.Height
 }
 
-func (bc *Blockchain) GetTransaction(txId []byte) Transaction {
-	tx, err := bc.crud.FindTransaction(txId)
+func (bc *Blockchain) GetTransaction(txId []byte) (tx Transaction, err error) {
+	tx, err = bc.crud.FindTransaction(txId)
 	if err != nil {
-		log.Panic("Error: Invalid Transaction Ewwww")
+		return tx, err
 	}
 
-	return tx
+	return tx, nil
 }
 
 func (bc *Blockchain) GetTransactions() (txs []*Transaction, err error) {
@@ -188,17 +195,37 @@ func (bc *Blockchain) GetTransactions() (txs []*Transaction, err error) {
 	return
 }
 
-func (bc *Blockchain) GetTransactionByPubkey(pubKey []byte) (Transaction, error) {
-	tx, err := bc.crud.FindTxByElectionPubkey(pubKey)
+func (bc *Blockchain) GetTransactionsByPubkey(pubKey []byte) (txs []Transaction, err error) {
+	iter, err := bc.crud.Iterator()
 	if err != nil {
-		logger.Error("Error: Transaction with pubkey doesn't exist")
+		return
+	}
+	for {
+		block := iter.Next()
+		for i := 0; i < len(block.Transactions); i++ {
+			transaction := block.Transactions[i]
+
+			if bytes.Compare(pubKey, transaction.ElectionPubkey) == 0 {
+				txs = append(txs, *transaction)
+			}
+		}
+		if len(block.PrevHash) == 0 {
+			break
+		}
+	}
+	return
+}
+
+func (bc *Blockchain) GetTransactionByPubkey(pubKey []byte) (Transaction, error) {
+	tx, err := bc.crud.FindTransactionByPubkey(pubKey)
+	if err != nil {
 		return tx, err
 	}
 
 	return tx, nil
 }
 
-func (bc *Blockchain) GetElectionTxByPubkey(pubKey []byte) (tx Transaction, err error) {
+func (bc *Blockchain) FindTxWithElectionOutByPubkey(pubKey []byte) (tx Transaction, err error) {
 	iter, err := bc.crud.Iterator()
 	if err != nil {
 		return
@@ -220,7 +247,7 @@ func (bc *Blockchain) GetElectionTxByPubkey(pubKey []byte) (tx Transaction, err 
 	return
 }
 
-func (bc *Blockchain) GetAcTxByPubkey(pubKey []byte) (tx Transaction, err error) {
+func (bc *Blockchain) FindTxWithAcOutByPubkey(pubKey []byte) (tx Transaction, err error) {
 	iter, err := bc.crud.Iterator()
 	if err != nil {
 		return
@@ -241,7 +268,7 @@ func (bc *Blockchain) GetAcTxByPubkey(pubKey []byte) (tx Transaction, err error)
 	return
 }
 
-func (bc *Blockchain) GetVotingTxByPubkey(pubKey []byte) (tx Transaction, err error) {
+func (bc *Blockchain) FindTxWithVotingOutByPubkey(pubKey []byte) (tx Transaction, err error) {
 	iter, err := bc.crud.Iterator()
 	if err != nil {
 		return
@@ -263,6 +290,7 @@ func (bc *Blockchain) GetVotingTxByPubkey(pubKey []byte) (tx Transaction, err er
 	return
 }
 
+///DELETE this later
 func (bc *Blockchain) GetBallotTxByPubkey(pubKey []byte) (tx Transaction, err error) {
 	iter, err := bc.crud.Iterator()
 	if err != nil {
@@ -285,13 +313,16 @@ func (bc *Blockchain) GetBallotTxByPubkey(pubKey []byte) (tx Transaction, err er
 	return
 }
 
-func (bc *Blockchain) GetUnUsedBallotTxOutputs(pubKey []byte) (tx []TxBallotOutput, err error) {
+func (bc *Blockchain) GetUnUsedBallotTxOutputs(pubKey []byte) (tx []map[string]TxBallotOutput, err error) {
 	utxos := NewUnusedXTOSet(bc)
 	// Compute UTXoSet
 	utxos.Compute()
 	unUsedTxos := utxos.FindUnUsedBallotTxOuputs(pubKey)
-	for _, v := range unUsedTxos {
-		tx = append(tx, v.BallotTx)
+	for k, v := range unUsedTxos {
+		ballottx := map[string]TxBallotOutput{
+			k: v.BallotTx,
+		}
+		tx = append(tx, ballottx)
 	}
 	return
 }
@@ -299,7 +330,7 @@ func (bc *Blockchain) GetUnUsedBallotTxOutputs(pubKey []byte) (tx []TxBallotOutp
 func (bc *Blockchain) QueryResult(pubKey []byte) (map[string]int, error) {
 	var candidate string
 	var results = make(map[string]int)
-	txElection, _ := bc.GetElectionTxByPubkey(pubKey)
+	txElection, _ := bc.FindTxWithElectionOutByPubkey(pubKey)
 	for _, v := range txElection.Output.ElectionTx.Candidates {
 		candidate := hex.EncodeToString(v)
 		results[candidate] = 0
@@ -383,7 +414,15 @@ func (bc *Blockchain) VerifyTx(tx *Transaction) bool {
 	}
 
 	if tx.outputSet() {
-		prevTx, err = bc.GetPrevTransactionByOutput(tx)
+		if tx.Output.ElectionTx.IsSet() {
+			_, err := bc.GetTransactionByPubkey(tx.ElectionPubkey)
+			if err == nil {
+				logger.Error("Election publickey already exist")
+				return false
+			}
+		} else {
+			prevTx, err = bc.GetPrevTransactionByOutput(tx)
+		}
 	}
 
 	if err != nil {
@@ -492,8 +531,8 @@ func (bc *Blockchain) PrintBlockchain() {
 	}
 }
 
-func (bc *Blockchain) GetBlockchain() ([]*Block, error) {
-	var blocks []*Block
+func (bc *Blockchain) GetBlockchain() ([]Block, error) {
+	var blocks []Block
 
 	iter, err := bc.crud.Iterator()
 	if err != nil {
@@ -501,11 +540,12 @@ func (bc *Blockchain) GetBlockchain() ([]*Block, error) {
 	}
 	for {
 		block := iter.Next()
-		blocks = append(blocks, block)
+		blocks = append(blocks, *block)
 
 		if len(block.PrevHash) == 0 {
 			break
 		}
 	}
+
 	return blocks, nil
 }

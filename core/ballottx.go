@@ -14,25 +14,25 @@ import (
 
 // Vote TxTxOutput
 type TxBallotOutput struct {
-	ID             string
-	TxID           []byte
-	Signers        [][]byte // SIGNATURE BY CONSENSUS GROUP
-	SigWitnesses   [][]byte
-	SecretMessage  []byte // Signed with Public view key (Decrypted with private view key) 🔑
-	PubKeys        [][]byte
-	ElectionPubKey []byte
-	Timestamp      int64
+	ID             string   `json:"id"`
+	TxID           []byte   `json:"tx_id"`
+	Signers        [][]byte `json:"signers"` // SIGNATURE BY CONSENSUS GROUP
+	SigWitnesses   [][]byte `json:"sig_witnesses"`
+	SecretMessage  []byte   `json:"secret_message"` // Signed with Public view key (Decrypted with private view key) 🔑
+	PubKeys        [][]byte `json:"pub_keys"`
+	ElectionPubKey []byte   `json:"election_pubKey"`
+	Timestamp      int64    `json:"timestamp"`
 }
 
 // Vote TxInput
 type TxBallotInput struct {
-	TxID           []byte
-	Signature      []byte
-	PubKeys        [][]byte
-	TxOut          []byte
-	Candidate      []byte
-	ElectionPubKey []byte
-	Timestamp      int64
+	TxID           []byte   `json:"tx_id"`
+	Signature      []byte   `json:"signature"`
+	PubKeys        [][]byte `json:"pub_keys"`
+	TxOut          []byte   `json:"tx_out"`
+	Candidate      []byte   `json:"candidate"`
+	ElectionPubKey []byte   `json:"election_pubkey"`
+	Timestamp      int64    `json:"timestamp"`
 }
 
 // NewTxBallotInput CASTS Vote using secret ballot

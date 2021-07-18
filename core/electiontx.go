@@ -12,22 +12,22 @@ import (
 // INITIALIZE ELECTION
 // Init  election TxOutput
 type TxElectionOutput struct {
-	ID             string
-	Signers        [][]byte
-	SigWitnesses   [][]byte
-	ElectionPubKey []byte
-	Title          string
-	Description    string
-	TotalPeople    int64
-	Candidates     [][]byte
+	ID             string   `json:"id,omitempty"`
+	Signers        [][]byte `json:"signers"`
+	SigWitnesses   [][]byte `json:"sig_witnesses"`
+	ElectionPubKey []byte   `json:"election_pubkey"`
+	Title          string   `json:"title"`
+	Description    string   `json:"description "`
+	TotalPeople    int64    `json:"total_people"`
+	Candidates     [][]byte `json:"candidates"`
 }
 
 // End Election TxInput
 type TxElectionInput struct {
-	Signers        [][]byte
-	SigWitnesses   [][]byte
-	TxOut          []byte
-	ElectionPubKey []byte
+	Signers        [][]byte `json:"signers"`
+	SigWitnesses   [][]byte `json:"sig_witnesses"`
+	TxOut          []byte   `json:"tx_out"`
+	ElectionPubKey []byte   `json:"election_pubkey"`
 }
 
 // NewTxAccreditationInput Stops Accreditation  Phase

@@ -13,22 +13,22 @@ import (
 // INITIALIZE VOTE
 // Start Vote TxTxOutput
 type TxVotingOutput struct {
-	ID             string
-	TxID           []byte
-	Signers        [][]byte
-	SigWitnesses   [][]byte
-	ElectionPubKey []byte
-	Timestamp      int64
+	ID             string   `json:"id"`
+	TxID           []byte   `json:"tx_id"`
+	Signers        [][]byte `json:"signers"`
+	SigWitnesses   [][]byte `json:"sig_witnesses"`
+	ElectionPubKey []byte   `json:"election_pubkey"`
+	Timestamp      int64    `json:"timestamp"`
 }
 
 // End Vote TxInput
 type TxVotingInput struct {
-	TxID           []byte
-	Signers        [][]byte // TransVotingtion Signatures from signers
-	SigWitnesses   [][]byte
-	ElectionPubKey []byte
-	TxOut          []byte
-	Timestamp      int64
+	TxID           []byte   `json:"tx_id"`
+	Signers        [][]byte `json:"signers"` // Signatures from signers
+	SigWitnesses   [][]byte `json:"sig_witnessess"`
+	ElectionPubKey []byte   `json:"election_pubkey"`
+	TxOut          []byte   `json:"tx_out"`
+	Timestamp      int64    `json:"timestamp"`
 }
 
 // NewTxVotingInput  ENDS Voting Phase

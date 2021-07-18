@@ -6,6 +6,7 @@ require (
 	github.com/BurntSushi/toml v0.3.1 // indirect
 	github.com/dgraph-io/badger v1.6.2
 	github.com/google/uuid v1.2.0
+	github.com/gumeniukcom/golang-jsonrpc2 v0.0.0-20191115112220-39c5ba2dd66f
 	github.com/mattn/go-colorable v0.1.8
 	github.com/sirupsen/logrus v1.8.1
 	github.com/snowzach/rotatefilehook v0.0.0-20180327172521-2f64f265f58c
