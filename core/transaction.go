@@ -16,8 +16,8 @@ import (
 	"time"
 
 	logger "github.com/sirupsen/logrus"
-	"github.com/workspace/evoting/ev-blockchain-protocol/pkg/crypto/multisig"
-	"github.com/workspace/evoting/ev-blockchain-protocol/pkg/crypto/ringsig"
+	"github.com/thedhejavu/ev-blockchain-protocol/pkg/crypto/multisig"
+	"github.com/thedhejavu/ev-blockchain-protocol/pkg/crypto/ringsig"
 )
 
 const VOTING_TX_TYPE = "voting_tx"

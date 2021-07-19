@@ -4,7 +4,7 @@ import (
 	"github.com/google/uuid"
 	logger "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"github.com/workspace/evoting/ev-blockchain-protocol/wallet"
+	"github.com/thedhejavu/ev-blockchain-protocol/wallet"
 )
 
 func NewCommands() *cobra.Command {

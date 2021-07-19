@@ -7,7 +7,7 @@ import (
 	"log"
 
 	logger "github.com/sirupsen/logrus"
-	"github.com/workspace/evoting/ev-blockchain-protocol/database"
+	"github.com/thedhejavu/ev-blockchain-protocol/database"
 )
 
 var (

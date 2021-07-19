@@ -9,12 +9,12 @@ import (
 
 	logger "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	blockchain "github.com/workspace/evoting/ev-blockchain-protocol/core"
-	"github.com/workspace/evoting/ev-blockchain-protocol/database"
-	"github.com/workspace/evoting/ev-blockchain-protocol/pkg/config"
-	"github.com/workspace/evoting/ev-blockchain-protocol/pkg/crypto/multisig"
-	"github.com/workspace/evoting/ev-blockchain-protocol/pkg/crypto/ringsig"
-	"github.com/workspace/evoting/ev-blockchain-protocol/wallet"
+	blockchain "github.com/thedhejavu/ev-blockchain-protocol/core"
+	"github.com/thedhejavu/ev-blockchain-protocol/database"
+	"github.com/thedhejavu/ev-blockchain-protocol/pkg/config"
+	"github.com/thedhejavu/ev-blockchain-protocol/pkg/crypto/multisig"
+	"github.com/thedhejavu/ev-blockchain-protocol/pkg/crypto/ringsig"
+	"github.com/thedhejavu/ev-blockchain-protocol/wallet"
 )
 
 const numOfKeys = 3

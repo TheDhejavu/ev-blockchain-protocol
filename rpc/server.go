@@ -9,9 +9,9 @@ import (
 
 	jrpc "github.com/gumeniukcom/golang-jsonrpc2"
 	logger "github.com/sirupsen/logrus"
-	blockchain "github.com/workspace/evoting/ev-blockchain-protocol/core"
-	"github.com/workspace/evoting/ev-blockchain-protocol/database"
-	"github.com/workspace/evoting/ev-blockchain-protocol/pkg/config"
+	blockchain "github.com/thedhejavu/ev-blockchain-protocol/core"
+	"github.com/thedhejavu/ev-blockchain-protocol/database"
+	"github.com/thedhejavu/ev-blockchain-protocol/pkg/config"
 )
 
 func getStore() database.Store {

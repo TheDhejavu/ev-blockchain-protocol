@@ -1,9 +1,8 @@
-module github.com/workspace/evoting/ev-blockchain-protocol
+module github.com/thedhejavu/ev-blockchain-protocol
 
 go 1.15
 
 require (
-	github.com/BurntSushi/toml v0.3.1 // indirect
 	github.com/dgraph-io/badger v1.6.2
 	github.com/google/uuid v1.2.0
 	github.com/gumeniukcom/golang-jsonrpc2 v0.0.0-20191115112220-39c5ba2dd66f

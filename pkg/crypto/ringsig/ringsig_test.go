@@ -7,7 +7,7 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/workspace/evoting/ev-blockchain-protocol/wallet"
+	"github.com/thedhejavu/ev-blockchain-protocol/wallet"
 )
 
 var (

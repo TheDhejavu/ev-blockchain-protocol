@@ -7,7 +7,7 @@ import (
 
 	jrpc "github.com/gumeniukcom/golang-jsonrpc2"
 	logger "github.com/sirupsen/logrus"
-	blockchain "github.com/workspace/evoting/ev-blockchain-protocol/core"
+	blockchain "github.com/thedhejavu/ev-blockchain-protocol/core"
 )
 
 type Handler struct {

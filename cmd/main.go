@@ -2,9 +2,9 @@ package main
 
 import (
 	"github.com/spf13/cobra"
-	"github.com/workspace/evoting/ev-blockchain-protocol/cmd/engine"
-	"github.com/workspace/evoting/ev-blockchain-protocol/cmd/server"
-	"github.com/workspace/evoting/ev-blockchain-protocol/cmd/wallet"
+	"github.com/thedhejavu/ev-blockchain-protocol/cmd/engine"
+	"github.com/thedhejavu/ev-blockchain-protocol/cmd/server"
+	"github.com/thedhejavu/ev-blockchain-protocol/cmd/wallet"
 )
 
 func main() {

@@ -3,7 +3,7 @@ package mempool
 import (
 	"sync"
 
-	blockchain "github.com/workspace/evoting/ev-blockchain-protocol/core"
+	blockchain "github.com/thedhejavu/ev-blockchain-protocol/core"
 )
 
 // =============================

@@ -5,7 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/workspace/evoting/ev-blockchain-protocol/rpc"
+	"github.com/thedhejavu/ev-blockchain-protocol/rpc"
 )
 
 func NewCommands() *cobra.Command {

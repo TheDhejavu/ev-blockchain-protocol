@@ -14,7 +14,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/workspace/evoting/ev-blockchain-protocol/pkg/crypto/base58"
+	"github.com/thedhejavu/ev-blockchain-protocol/pkg/crypto/base58"
 )
 
 // PublicKeyRing is a list of public keys.
