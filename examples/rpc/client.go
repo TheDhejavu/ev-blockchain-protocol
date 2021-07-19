@@ -11,11 +11,11 @@ import (
 	"time"
 
 	logger "github.com/sirupsen/logrus"
-	blockchain "github.com/workspace/evoting/ev-blockchain-protocol/core"
-	"github.com/workspace/evoting/ev-blockchain-protocol/pkg/crypto/multisig"
-	"github.com/workspace/evoting/ev-blockchain-protocol/pkg/crypto/ringsig"
-	"github.com/workspace/evoting/ev-blockchain-protocol/rpc"
-	"github.com/workspace/evoting/ev-blockchain-protocol/wallet"
+	blockchain "github.com/thedhejavu/ev-blockchain-protocol/core"
+	"github.com/thedhejavu/ev-blockchain-protocol/pkg/crypto/multisig"
+	"github.com/thedhejavu/ev-blockchain-protocol/pkg/crypto/ringsig"
+	"github.com/thedhejavu/ev-blockchain-protocol/rpc"
+	"github.com/thedhejavu/ev-blockchain-protocol/wallet"
 )
 
 const numOfKeys = 3
