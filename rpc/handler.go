@@ -151,6 +151,7 @@ func (h *Handler) QueryResults(ctx context.Context, data json.RawMessage) (json.
 		logger.Error("Marshal Error: ", err)
 		return nil, jrpc.InternalErrorCode, err
 	}
+
 	return mdata, jrpc.OK, nil
 }
 
@@ -388,7 +389,7 @@ func (h *Handler) StartElectionTx(ctx context.Context, data json.RawMessage) (js
 		logger.Error("UnMarshal Error: ", err)
 		return nil, jrpc.InvalidRequestErrorCode, err
 	}
-
+	fmt.Println("PUBKKKK", request.Data.ElectionPubKey)
 	txOut := blockchain.NewElectionTxOutput(
 		request.Data.Title,
 		request.Data.Description,

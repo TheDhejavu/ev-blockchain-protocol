@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -56,7 +57,8 @@ func (repo *BlockchainRepo) FindTxWithTxOutput(pubkey, ttype string) blockchain.
 	return tx
 }
 
-func (repo *BlockchainRepo) QueryResults(pubkey string) {
+func (repo *BlockchainRepo) QueryResults(pubkey string) (rpc.Result, error) {
+	fmt.Println(pubkey)
 	data := map[string]string{
 		"pubkey": pubkey,
 	}
@@ -64,17 +66,27 @@ func (repo *BlockchainRepo) QueryResults(pubkey string) {
 	resp, err := repo.client.Do("QueryResults", data)
 	if err != nil {
 		logger.Error("UnMarshal Error: ", err)
+		return resp.Body.Result, err
 	}
-	fmt.Println(resp.Body)
+	logger.Info(resp.Body.Result)
+	return resp.Body.Result, nil
 }
-func (repo *BlockchainRepo) QueryBlockchain() {
+func (repo *BlockchainRepo) QueryBlockchain() (rpc.Result, error) {
 	data := map[string]string{}
 
 	resp, err := repo.client.Do("QueryBlockchain", data)
 	if err != nil {
 		logger.Error("UnMarshal Error: ", err)
+		return rpc.Result{}, err
 	}
-	fmt.Println(resp.Body)
+	if resp.Body.HasError() {
+		logger.Error(resp.Body.Error)
+		return rpc.Result{}, errors.New(resp.Body.Error.Message)
+	}
+
+	logger.Info(resp.Body.Result)
+
+	return resp.Body.Result, nil
 }
 
 func (repo *BlockchainRepo) QueryUnUsedBallotTxs(pubkey string) []map[string]blockchain.TxBallotOutput {
@@ -86,7 +98,6 @@ func (repo *BlockchainRepo) QueryUnUsedBallotTxs(pubkey string) []map[string]blo
 	if err != nil {
 		logger.Error("UnMarshal Error: ", err)
 	}
-	// fmt.Println(resp.Body)
 
 	var utxbo []map[string]blockchain.TxBallotOutput
 	inrec, err := json.Marshal(resp.Body.Result.Data)
@@ -95,11 +106,11 @@ func (repo *BlockchainRepo) QueryUnUsedBallotTxs(pubkey string) []map[string]blo
 	}
 
 	json.Unmarshal(inrec, &utxbo)
-
+	// logger.Info(utxbo)
 	return utxbo
 }
 
-func (repo *BlockchainRepo) GetTransaction(id string) {
+func (repo *BlockchainRepo) GetTransaction(id string) (rpc.Result, error) {
 
 	data := map[string]string{
 		"id": id,
@@ -108,15 +119,23 @@ func (repo *BlockchainRepo) GetTransaction(id string) {
 	resp, err := repo.client.Do("GetTransaction", data)
 	if err != nil {
 		logger.Error("UnMarshal Error: ", err)
+		return rpc.Result{}, err
 	}
-	fmt.Println(resp.Body)
+	if resp.Body.HasError() {
+		logger.Error(resp.Body.Error)
+		return rpc.Result{}, errors.New(resp.Body.Error.Message)
+	}
+
+	logger.Info(resp.Body.Result)
+
+	return resp.Body.Result, nil
 }
 
 type ElectionOutput struct {
 	Data blockchain.TxElectionOutput `json:"data"`
 }
 
-func (repo *BlockchainRepo) StartElection(title string, pubkey string, description string, totalPeople int64, candidates [][]byte) {
+func (repo *BlockchainRepo) StartElection(pubkey, title, description string, totalPeople int64, candidates [][]byte) (rpc.Result, error) {
 	electionPubkey, _ := base64.StdEncoding.DecodeString(pubkey)
 
 	txOut := blockchain.TxElectionOutput{
@@ -164,8 +183,16 @@ func (repo *BlockchainRepo) StartElection(title string, pubkey string, descripti
 	resp, err := repo.client.Do("StartElection", outInterface)
 	if err != nil {
 		logger.Error("UnMarshal Error: ", err)
+		return rpc.Result{}, err
 	}
-	fmt.Println(resp.Body)
+	if resp.Body.HasError() {
+		logger.Error(resp.Body.Error)
+		return rpc.Result{}, errors.New(resp.Body.Error.Message)
+	}
+
+	logger.Info(resp.Body.Result)
+
+	return resp.Body.Result, nil
 }
 
 type ElectionInput struct {
@@ -173,7 +200,7 @@ type ElectionInput struct {
 	Data   blockchain.TxElectionInput `json:"data"`
 }
 
-func (repo *BlockchainRepo) StopElection(pubkey string) {
+func (repo *BlockchainRepo) StopElection(pubkey string) (rpc.Result, error) {
 	electionPubkey, _ := base64.StdEncoding.DecodeString(pubkey)
 	txElectionOut := repo.FindTxWithTxOutput(pubkey, "election_tx")
 
@@ -216,8 +243,16 @@ func (repo *BlockchainRepo) StopElection(pubkey string) {
 	resp, err := repo.client.Do("StopElection", outInterface)
 	if err != nil {
 		logger.Error("UnMarshal Error: ", err)
+		return rpc.Result{}, err
 	}
-	fmt.Println(resp.Body)
+	if resp.Body.HasError() {
+		logger.Error(resp.Body.Error)
+		return rpc.Result{}, errors.New(resp.Body.Error.Message)
+	}
+
+	logger.Info(resp.Body.Result)
+
+	return resp.Body.Result, nil
 }
 
 type AccreditationOutput struct {
@@ -225,7 +260,7 @@ type AccreditationOutput struct {
 	Data   blockchain.TxAcOutput `json:"data"`
 }
 
-func (repo *BlockchainRepo) StartAccreditation(pubkey, txElectionOutId string) {
+func (repo *BlockchainRepo) StartAccreditation(pubkey, txElectionOutId string) (rpc.Result, error) {
 	electionPubkey, _ := base64.StdEncoding.DecodeString(pubkey)
 	txId, _ := base64.StdEncoding.DecodeString(txElectionOutId)
 
@@ -268,8 +303,16 @@ func (repo *BlockchainRepo) StartAccreditation(pubkey, txElectionOutId string) {
 	resp, err := repo.client.Do("StartAccreditation", outInterface)
 	if err != nil {
 		logger.Error("UnMarshal Error: ", err)
+		return rpc.Result{}, err
 	}
-	fmt.Println(resp.Body)
+	if resp.Body.HasError() {
+		logger.Error(resp.Body.Error)
+		return rpc.Result{}, errors.New(resp.Body.Error.Message)
+	}
+
+	logger.Info(resp.Body.Result)
+
+	return resp.Body.Result, nil
 }
 
 type AccreditationInput struct {
@@ -277,7 +320,7 @@ type AccreditationInput struct {
 	Data   blockchain.TxAcInput `json:"data"`
 }
 
-func (repo *BlockchainRepo) StopAccreditation(pubkey, txElectionOutId string, txAcOutId string) {
+func (repo *BlockchainRepo) StopAccreditation(pubkey, txElectionOutId string, txAcOutId string) (rpc.Result, error) {
 	txId, _ := base64.StdEncoding.DecodeString(txElectionOutId)
 	txOut, _ := base64.StdEncoding.DecodeString(txAcOutId)
 	electionPubkey, _ := base64.StdEncoding.DecodeString(pubkey)
@@ -324,8 +367,16 @@ func (repo *BlockchainRepo) StopAccreditation(pubkey, txElectionOutId string, tx
 	resp, err := repo.client.Do("StopAccreditation", outInterface)
 	if err != nil {
 		logger.Error("UnMarshal Error: ", err)
+		return rpc.Result{}, err
 	}
-	fmt.Println(resp.Body)
+	if resp.Body.HasError() {
+		logger.Error(resp.Body.Error)
+		return rpc.Result{}, errors.New(resp.Body.Error.Message)
+	}
+
+	logger.Info(resp.Body.Result)
+
+	return resp.Body.Result, nil
 }
 
 type VotingOutput struct {
@@ -333,7 +384,7 @@ type VotingOutput struct {
 	Data   blockchain.TxVotingOutput `json:"data"`
 }
 
-func (repo *BlockchainRepo) StartVoting(pubkey string, txElectionOutId string) {
+func (repo *BlockchainRepo) StartVoting(pubkey string, txElectionOutId string) (rpc.Result, error) {
 	txId, _ := base64.StdEncoding.DecodeString(txElectionOutId)
 	electionPubkey, _ := base64.StdEncoding.DecodeString(pubkey)
 
@@ -377,8 +428,16 @@ func (repo *BlockchainRepo) StartVoting(pubkey string, txElectionOutId string) {
 	resp, err := repo.client.Do("StartVoting", outInterface)
 	if err != nil {
 		logger.Error("UnMarshal Error: ", err)
+		return rpc.Result{}, err
 	}
-	fmt.Println(resp.Body)
+	if resp.Body.HasError() {
+		logger.Error(resp.Body.Error)
+		return rpc.Result{}, errors.New(resp.Body.Error.Message)
+	}
+
+	logger.Info(resp.Body.Result)
+
+	return resp.Body.Result, nil
 }
 
 type VotingInput struct {
@@ -386,7 +445,7 @@ type VotingInput struct {
 	Data   blockchain.TxVotingInput `json:"data"`
 }
 
-func (repo *BlockchainRepo) StopVoting(pubkey, txElectionOutId, txVotingOutId string) {
+func (repo *BlockchainRepo) StopVoting(pubkey, txElectionOutId, txVotingOutId string) (rpc.Result, error) {
 	txId, _ := base64.StdEncoding.DecodeString(txElectionOutId)
 	txOut, _ := base64.StdEncoding.DecodeString(txVotingOutId)
 	electionPubkey, _ := base64.StdEncoding.DecodeString(pubkey)
@@ -432,8 +491,16 @@ func (repo *BlockchainRepo) StopVoting(pubkey, txElectionOutId, txVotingOutId st
 	resp, err := repo.client.Do("StopVoting", outInterface)
 	if err != nil {
 		logger.Error("UnMarshal Error: ", err)
+		return rpc.Result{}, err
 	}
-	fmt.Println(resp.Body)
+	if resp.Body.HasError() {
+		logger.Error(resp.Body.Error)
+		return rpc.Result{}, errors.New(resp.Body.Error.Message)
+	}
+
+	logger.Info(resp.Body.Result)
+
+	return resp.Body.Result, nil
 }
 
 type BallotOutput struct {
@@ -441,7 +508,7 @@ type BallotOutput struct {
 	Data   blockchain.TxBallotOutput `json:"data"`
 }
 
-func (repo *BlockchainRepo) CreateBallot(userId, pubkey, txElectionOutId string) {
+func (repo *BlockchainRepo) CreateBallot(userId, pubkey, txElectionOutId string) (rpc.Result, error) {
 	var keyRingByte [][]byte
 
 	txId, _ := base64.StdEncoding.DecodeString(txElectionOutId)
@@ -500,14 +567,23 @@ func (repo *BlockchainRepo) CreateBallot(userId, pubkey, txElectionOutId string)
 	inrec, err := json.Marshal(Output)
 	if err != nil {
 		logger.Error("Marshal Error: ", err)
+		return rpc.Result{}, err
 	}
 	json.Unmarshal(inrec, &outInterface)
 
 	resp, err := repo.client.Do("CreateBallot", outInterface)
 	if err != nil {
 		logger.Error("UnMarshal Error: ", err)
+		return rpc.Result{}, err
 	}
-	fmt.Println(resp.Body)
+	if resp.Body.HasError() {
+		logger.Error(resp.Body.Error)
+		return rpc.Result{}, errors.New(resp.Body.Error.Message)
+	}
+
+	logger.Info(resp.Body.Result)
+
+	return resp.Body.Result, nil
 }
 
 type BallotInput struct {
@@ -515,7 +591,7 @@ type BallotInput struct {
 	Data   blockchain.TxBallotInput `json:"data"`
 }
 
-func (repo *BlockchainRepo) CastBallot(userId, pubkey, txElectionOutId, candidatePubkey string) {
+func (repo *BlockchainRepo) CastBallot(userId, pubkey, txElectionOutId, candidatePubkey string) (rpc.Result, error) {
 	electionPubkey, _ := base64.StdEncoding.DecodeString(pubkey)
 	candidate, _ := base64.StdEncoding.DecodeString(candidatePubkey)
 	txId, _ := base64.StdEncoding.DecodeString(txElectionOutId)
@@ -549,17 +625,6 @@ func (repo *BlockchainRepo) CastBallot(userId, pubkey, txElectionOutId, candidat
 		// add the public key part to the ring
 		keyring.Add(w.Main.PrivateKey.PublicKey)
 	}
-	// for i := 0; i < len(keyRingByte); i++ {
-	// 	pub := keyRingByte[0]
-	// 	x := big.Int{}
-	// 	y := big.Int{}
-	// 	keyLen := len(pub)
-	// 	x.SetBytes(pub[:(keyLen / 2)])
-	// 	y.SetBytes(pub[(keyLen / 2):])
-
-	// 	rawPubKey := ecdsa.PublicKey{Curve: DefaultCurve, X: &x, Y: &y}
-	// 	keyring.Add(rawPubKey)
-	// }
 
 	txIn := blockchain.TxBallotInput{
 		Signature:      nil,
@@ -586,14 +651,24 @@ func (repo *BlockchainRepo) CastBallot(userId, pubkey, txElectionOutId, candidat
 	inrec, err := json.Marshal(Output)
 	if err != nil {
 		logger.Error("Marshal Error: ", err)
+		return rpc.Result{}, err
 	}
 	json.Unmarshal(inrec, &outInterface)
 
 	resp, err := repo.client.Do("CastBallot", outInterface)
 	if err != nil {
 		logger.Error("UnMarshal Error: ", err)
+		return rpc.Result{}, err
 	}
-	fmt.Println(resp.Body)
+
+	if resp.Body.HasError() {
+		logger.Error(resp.Body.Error)
+		return rpc.Result{}, errors.New(resp.Body.Error.Message)
+	}
+
+	logger.Info(resp.Body.Result)
+
+	return resp.Body.Result, nil
 }
 
 func Candidates() [][]byte {
@@ -624,24 +699,25 @@ func GetCandidates() [][]byte {
 }
 
 var (
-	_txElectionOutId = "XmJpKlJpuLWSKIgaM1CoNAYsjNTR6FwvHQ888FlMGRE="
-	_txAcOutId       = "rd26pDYNqLu7JhUttdR70P+mH3PqEfpAXn1zgPsoBzU="
-	_txVotingOutId   = "MGTFKE/oanyX5UtYyff/XZ9EOSnjH5sqSbntFB2aQvg="
+	_txElectionOutId = "n134UqhsDgJN4NQquY6xbzAwqCF7y93AcmLKIT9lfVM="
+	_txAcOutId       = "5MxLuaBqVjVNsoMXdOXkYfFnELrD3zMp0goq3JCLLjY="
+	_txVotingOutId   = "04V1izpJFJqYdcD5G2OJdLx04dUqNlMCR/tOnJ+7iOA="
 )
 
 func main() {
-	electionPubkey := []byte("1_election_12345678")
+	electionPubkey := []byte("5_election_12345678")
 	pubkeyStr := base64.StdEncoding.EncodeToString(electionPubkey)
-	userId := fmt.Sprintf("candidates_1")
+
+	// userId := fmt.Sprintf("candidates_1")
 
 	client := rpc.NewClient("http://localhost:8088/json-rpc")
 	chainRepo := NewBlockchainRepository(client)
 
 	// chainRepo.GetTransaction()
 	// chainRepo.StartElection(
+	// 	pubkeyStr,
 	// 	"Presidential election",
 	// 	"president  speeeechs",
-	// 	pubkeyStr,
 	// 	100,
 	// 	Candidates(),
 	// )
@@ -665,13 +741,11 @@ func main() {
 	// 	pubkeyStr,
 	// 	_txElectionOutId,
 	// )
-	candidates := GetCandidates()
-	candidate := base64.StdEncoding.EncodeToString(candidates[0])
-	chainRepo.CastBallot(userId, pubkeyStr, _txElectionOutId, candidate)
-	// chainRepo.QueryUnUsedBallotTxs()
+	// candidates := GetCandidates()
+	// candidate := base64.StdEncoding.EncodeToString(candidates[0])
+	// chainRepo.CastBallot(userId, pubkeyStr, _txElectionOutId, candidate)
+	// chainRepo.QueryUnUsedBallotTxs(pubkeyStr)
 	// chainRepo.QueryBlockchain()
-	// chainRepo.QueryResults()
+	chainRepo.QueryResults(pubkeyStr)
 
 }
-
-// m7jxErFXq/fy4mP0X/SxclaEDQStJryKRuqBVmI/4zo=

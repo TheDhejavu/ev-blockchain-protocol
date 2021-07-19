@@ -235,6 +235,7 @@ func (bc *Blockchain) FindTxWithElectionOutByPubkey(pubKey []byte) (tx Transacti
 		for i := 0; i < len(block.Transactions); i++ {
 			tx = *block.Transactions[i]
 			txElection := tx.Output.ElectionTx
+
 			if bytes.Compare(txElection.ElectionPubKey, pubKey) == 0 {
 				return
 			}
@@ -335,6 +336,7 @@ func (bc *Blockchain) QueryResult(pubKey []byte) (map[string]int, error) {
 		candidate := hex.EncodeToString(v)
 		results[candidate] = 0
 	}
+	fmt.Println(results)
 
 	iter, err := bc.crud.Iterator()
 	if err != nil {
@@ -345,8 +347,7 @@ func (bc *Blockchain) QueryResult(pubKey []byte) (map[string]int, error) {
 		for i := 0; i < len(block.Transactions); i++ {
 			tx := *block.Transactions[i]
 			txBallotIn := tx.Input.BallotTx
-			fmt.Println(txBallotIn)
-			if bytes.Compare(txBallotIn.ElectionPubKey, pubKey) == 0 {
+			if bytes.Compare(tx.ElectionPubkey, pubKey) == 0 {
 				candidate = hex.EncodeToString(txBallotIn.Candidate)
 				if _, ok := results[candidate]; ok {
 					results[candidate] += 1
@@ -511,6 +512,7 @@ func (bc *Blockchain) PrintBlockchain() {
 		fmt.Printf("PrevHash: %x\n", block.PrevHash)
 		fmt.Printf("Hash: %x\n", block.Hash)
 		fmt.Printf("Height: %d\n", block.Height)
+		// fmt.Println(block.ElectionPubKey)
 		if block.PrevHash != nil {
 			oldBlock, _ = bc.GetBlock(block.PrevHash)
 			validate := block.IsBlockValid(oldBlock)
@@ -519,6 +521,7 @@ func (bc *Blockchain) PrintBlockchain() {
 
 		for _, tx := range block.Transactions {
 			fmt.Println(tx)
+			// fmt.Println("((((ELELELELELELELEL))))", tx.ElectionPubkey)
 			if block.IsGenesis() == false {
 				fmt.Printf("Transaction Valid: %t\n", bc.VerifyTx(tx))
 			}

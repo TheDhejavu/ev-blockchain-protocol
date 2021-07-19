@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"net/http"
+	"reflect"
 )
 
 type Client struct {
@@ -74,4 +75,12 @@ func (c *Client) NewRequest(method string, params interface{}) map[string]interf
 		"params":  params,
 		"method":  method,
 	}
+}
+
+func (b Body) HasError() bool {
+	if reflect.DeepEqual(b.Error, Error{}) == false {
+		return true
+	}
+
+	return false
 }
